@@ -20,7 +20,26 @@ class ProductController extends Controller
     /**
      * Product listing page
      */
-    public function listing(Request $request)
+    /**
+     * Product listing page (Shop alias)
+     */
+    public function shop(Request $request)
+    {
+        return $this->listing($request, 'customer.products.shop');
+    }
+
+    /**
+     * Blog page
+     */
+    public function blog()
+    {
+        return view('customer.products.blog');
+    }
+
+    /**
+     * Product listing page
+     */
+    public function listing(Request $request, $viewName = 'customer.products.listing')
     {
         try {
             $perPage = $request->get('per_page', 12);
@@ -46,7 +65,7 @@ class ProductController extends Controller
             $products = $this->productService->getProducts($filters, $perPage, $page);
             $allFilters = $this->productService->getAllFilters();
 
-            return view('customer.products.listing', [
+            return view($viewName, [
                 'products' => $products->items(),
                 'paginator' => [
                     'current_page' => $products->currentPage(),
@@ -67,12 +86,12 @@ class ProductController extends Controller
                 'isFeatured' => $filters['is_featured'],
                 'isNew' => $filters['is_new'],
                 'isBestseller' => $filters['is_bestseller'],
-                'title' => 'All Products - APIQO Fashion Jewelry',
+                'title' => 'All Products - Ved Herbs & Ayurveda',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Product listing error: ' . $e->getMessage());
-            return view('customer.products.listing', [
+            return view($viewName, [
                 'products' => [],
                 'paginator' => [],
                 'filters' => $this->productService->getAllFilters(),
@@ -135,8 +154,8 @@ class ProductController extends Controller
                 'maxPrice' => $filters['max_price'],
                 'brandId' => $filters['brand_id'],
                 'inStock' => $filters['in_stock'],
-                'title' => $category->name . ' - APIQO Fashion Jewelry',
-                'meta_description' => $category->description,
+                'title' => $category->name . ' - Ved Herbs & Ayurveda',
+                'meta_description' => $category->meta_description ?? $category->description,
             ]);
 
         } catch (\Exception $e) {
@@ -160,12 +179,12 @@ class ProductController extends Controller
             }
 
             $relatedProducts = $this->productService->getRelatedProducts($product['id'], 4);
-            
+
             // Fetch reviews
             $reviews = \App\Models\Review::where('product_id', $product['id'])
-                        ->where('status', true)
-                        ->latest()
-                        ->get();
+                ->where('status', true)
+                ->latest()
+                ->get();
 
             return view('customer.products.details', [
                 'product' => $product,

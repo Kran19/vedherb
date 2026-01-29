@@ -345,16 +345,18 @@ Route::name('customer.')->group(function () {
     | PRODUCTS
     |--------------------------------------------------------------------------
     */
-    Route::get('/products', [CustomerProduct::class, 'listing'])->name('products.list');
-    Route::get('/category/{slug}', [CustomerProduct::class, 'category'])->name('category.products');
-    Route::get('/product/{slug}', [CustomerProduct::class, 'details'])->name('products.details');
-    Route::get('/search', [CustomerProduct::class, 'search'])->name('products.search');
-    Route::get('/products/{slug}/quick-view', [CustomerProduct::class, 'quickView'])->name('products.quick-view');
-    
-    // ADDED FROM FILE 1: Shop and Blog routes
-    Route::get('/shop', [CustomerProduct::class, 'shop'])->name('products.shop');
-    Route::get('/blog', [CustomerProduct::class, 'blog'])->name('products.blog');
+    Route::prefix('products')->group(function () {
+        Route::get('/', [CustomerProduct::class, 'listing'])->name('products.list');
+        Route::get('/category/{slug}', [CustomerProduct::class, 'category'])->name('category.products');
+        Route::get('/product/{slug}', [CustomerProduct::class, 'details'])->name('products.details');
+        Route::get('/search', [CustomerProduct::class, 'search'])->name('products.search');
+        Route::get('/{slug}/quick-view', [CustomerProduct::class, 'quickView'])->name('products.quick-view');
 
+
+        // ADDED FROM FILE 1: Shop and Blog routes
+        Route::get('/shop', [CustomerProduct::class, 'shop'])->name('products.shop');
+        Route::get('/blog', [CustomerProduct::class, 'blog'])->name('products.blog');
+    });
     /*
     |--------------------------------------------------------------------------
     | CART ROUTES (Enhanced from File 2)
@@ -363,7 +365,7 @@ Route::name('customer.')->group(function () {
     Route::prefix('cart')->group(function () {
         // Basic cart page (from both files)
         Route::get('/', [CustomerCart::class, 'index'])->name('cart');
-        
+
         // Enhanced cart functionality from File 2
         Route::post('/add', [CustomerCart::class, 'addItem'])->name('cart.add');
         Route::put('/update/{cartItemId}', [CustomerCart::class, 'updateQuantity'])->name('cart.update');
@@ -386,8 +388,7 @@ Route::name('customer.')->group(function () {
             // Basic checkout pages from File 1
             Route::get('/', [CustomerCheckout::class, 'index'])->name('index');
             Route::get('/payment', [CustomerCheckout::class, 'payment'])->name('payment');
-            Route::get('/confirmation', [CustomerCheckout::class, 'confirmation'])->name('confirmation');
-            
+
             // Enhanced checkout functionality from File 2
             Route::post('/process', [CustomerCheckout::class, 'processCheckout'])->name('process');
             Route::post('/shipping/check', [CustomerCheckout::class, 'checkShipping'])
@@ -397,7 +398,7 @@ Route::name('customer.')->group(function () {
             Route::get('/payment/failed', [CustomerCheckout::class, 'paymentFailed'])
                 ->name('payment.failed');
             Route::get('/confirmation/{order}', [CustomerCheckout::class, 'confirmation'])
-                ->name('confirmation.detailed'); // Renamed to avoid conflict with above
+                ->name('confirmation');
             Route::post('/buy-now', [CustomerCheckout::class, 'buyNow'])
                 ->name('buy.now');
             Route::post('/razorpay/order', [CustomerCheckout::class, 'createRazorpayOrder'])
@@ -412,11 +413,11 @@ Route::name('customer.')->group(function () {
     */
     // Basic wishlist page from File 1
     Route::get('/wishlist', [CustomerWishlist::class, 'index'])->name('wishlist');
-    
+
     // Enhanced wishlist functionality from File 2 (with middleware)
     Route::middleware(['customer.auth'])->prefix('wishlist')->name('wishlist.')->group(function () {
         Route::get('/', [CustomerWishlist::class, 'index'])->name('index');
-        
+
         // Item management
         Route::post('/add', [CustomerWishlist::class, 'add'])->name('add');
         Route::post('/remove', [CustomerWishlist::class, 'remove'])->name('remove');
@@ -424,20 +425,20 @@ Route::name('customer.')->group(function () {
         Route::post('/move-to-cart', [CustomerWishlist::class, 'moveToCart'])->name('move-to-cart');
         Route::post('/move-all-to-cart', [CustomerWishlist::class, 'moveAllToCart'])->name('move-all-to-cart');
         Route::post('/clear', [CustomerWishlist::class, 'clear'])->name('clear');
-        
+
         // Wishlist management
         Route::post('/create', [CustomerWishlist::class, 'create'])->name('create');
         Route::put('/{id}', [CustomerWishlist::class, 'update'])->name('update');
         Route::delete('/{id}', [CustomerWishlist::class, 'delete'])->name('delete');
         Route::post('/{id}/share', [CustomerWishlist::class, 'share'])->name('share');
         Route::post('/{id}/add-item', [CustomerWishlist::class, 'addItemToWishlist'])->name('add.item');
-        
+
         // Data endpoints
         Route::get('/count', [CustomerWishlist::class, 'count'])->name('count');
         Route::get('/items', [CustomerWishlist::class, 'getWishlistItems'])->name('items');
         Route::get('/wishlists', [CustomerWishlist::class, 'getWishlists'])->name('wishlists');
     });
-    
+
     // Public shared wishlist (no auth required) from File 2
     Route::get('/wishlist/shared/{id}', [CustomerWishlist::class, 'shared'])->name('wishlist.shared');
 
@@ -468,19 +469,20 @@ Route::name('customer.')->group(function () {
         Route::get('/orders', [CustomerOrder::class, 'orders'])->name('orders');
         Route::get('/orders/{id}', [CustomerOrder::class, 'orderDetails'])->name('orders.details');
         Route::get('/addresses', [CustomerAccount::class, 'addresses'])->name('addresses');
+        Route::get('/addresses/{id}', [CustomerAccount::class, 'getAddress'])->name('addresses.get');
         Route::get('/change-password', [CustomerAccount::class, 'changePassword'])->name('change-password');
-        
+
         // Enhanced account functionality from File 2
         Route::post('/addresses', [CustomerAccount::class, 'storeAddress'])->name('addresses.store');
         Route::put('/addresses/{id}', [CustomerAccount::class, 'updateAddress'])->name('addresses.update');
         Route::delete('/addresses/{id}', [CustomerAccount::class, 'deleteAddress'])->name('addresses.delete');
         Route::post('/addresses/{id}/set-default', [CustomerAccount::class, 'setDefaultAddress'])->name('addresses.set-default');
-        
+
         // Order management from File 2
         Route::post('/orders/{id}/cancel', [CustomerOrder::class, 'cancelOrder'])->name('orders.cancel');
         Route::get('/orders/filter/{status}', [CustomerOrder::class, 'filterOrders'])->name('orders.filter');
         Route::get('/orders/{id}/invoice', [CustomerOrder::class, 'downloadInvoice'])->name('orders.download-invoice');
-        
+
         // Password management from File 2
         Route::post('/change-password', [CustomerAccount::class, 'updatePassword'])->name('change-password.update');
     });

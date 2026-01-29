@@ -8,13 +8,21 @@ use App\Models\CustomerAddress;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Wishlist;
+use App\Models\WishlistItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Helpers\CartHelper;
 
 class AccountController extends Controller
 {
+    protected $cartHelper;
+
+    public function __construct(CartHelper $cartHelper)
+    {
+        $this->cartHelper = $cartHelper;
+    }
     public function profile()
     {
         $customer = Auth::guard('customer')->user();
@@ -24,7 +32,7 @@ class AccountController extends Controller
             ->orderBy('created_at', 'desc')
             ->take(3)
             ->get()
-            ->map(function($order) {
+            ->map(function ($order) {
                 return [
                     'id' => $order->id,
                     'order_number' => $order->order_number,
@@ -35,11 +43,20 @@ class AccountController extends Controller
                 ];
             });
 
+        // Get cart items count
+        $cartCount = $this->cartHelper->getCartCount();
+
         // Get wishlist count
         $wishlistCount = Wishlist::where('customer_id', $customer->id)->count();
 
-        // Get cart items count (from session or database)
-        $cartCount = 0; // You'll need to implement your cart logic
+        // Get actual wishlist items
+        $wishlistItems = WishlistItem::whereHas('wishlist', function ($query) use ($customer) {
+            $query->where('customer_id', $customer->id);
+        })
+            ->with(['variant.product', 'variant.attributes'])
+            ->latest()
+            ->take(2)
+            ->get();
 
         // Get orders count
         $ordersCount = Order::where('customer_id', $customer->id)->count();
@@ -49,7 +66,8 @@ class AccountController extends Controller
             'recentOrders',
             'wishlistCount',
             'cartCount',
-            'ordersCount'
+            'ordersCount',
+            'wishlistItems'
         ));
     }
 
@@ -186,6 +204,16 @@ class AccountController extends Controller
 
         return redirect()->route('customer.account.addresses')
             ->with('success', 'Default address updated successfully!');
+    }
+
+    public function getAddress($id)
+    {
+        $customer = Auth::guard('customer')->user();
+        $address = CustomerAddress::where('customer_id', $customer->id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        return response()->json($address);
     }
 
     public function changePassword()

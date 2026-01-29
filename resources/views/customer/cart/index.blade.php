@@ -1,26 +1,56 @@
 @extends('customer.layouts.master')
 
 @section('title', 'Shopping Cart - Ved Herbs & Ayurveda')
+
 @push('styles')
 <style>
-.animate-fade-in-down {
-    animation: fadeInDown 0.3s ease-out;
-}
+    .animate-fade-in-down {
+        animation: fadeInDown 0.3s ease-out;
+    }
 
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+
+    .cart-item-transition {
+        transition: all 0.3s ease-out;
     }
-}
+
+    .btn-loading {
+        position: relative;
+        color: transparent !important;
+        pointer-events: none;
+    }
+
+    .btn-loading::after {
+        content: "";
+        position: absolute;
+        width: 1.25rem;
+        height: 1.25rem;
+        top: 50%;
+        left: 50%;
+        margin-top: -0.625rem;
+        margin-left: -0.625rem;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 @endpush
-@section('content')
 
+@section('content')
 
 <!-- Breadcrumb Navigation -->
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
@@ -46,27 +76,95 @@
         <div class="lg:col-span-2">
             <!-- Cart Header -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
-                <h1 class="text-xl sm:text-2xl font-semibold text-stone-900">Your Cart (<span id="cart-count">0</span> items)</h1>
-                <a href="{{ route('customer.products.shop') }}" class="text-emerald-700 hover:text-emerald-800 font-medium text-xs sm:text-sm flex items-center gap-1 w-fit">
-                    <iconify-icon icon="lucide:arrow-left" width="14" class="sm:w-4"></iconify-icon>
-                    Continue Shopping
-                </a>
+                <h1 class="text-xl sm:text-2xl font-semibold text-stone-900">Your Cart (<span id="cart-count-display">{{ $cart['items_count'] ?? 0 }}</span> items)</h1>
+                <div class="flex items-center gap-4">
+                     <button onclick="clearCart()" class="text-xs text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
+                        <iconify-icon icon="lucide:trash-2" width="14"></iconify-icon>
+                        Clear Cart
+                    </button>
+                    <a href="{{ route('customer.products.shop') }}" class="text-emerald-700 hover:text-emerald-800 font-medium text-xs sm:text-sm flex items-center gap-1 w-fit">
+                        <iconify-icon icon="lucide:arrow-left" width="14" class="sm:w-4"></iconify-icon>
+                        Continue Shopping
+                    </a>
+                </div>
             </div>
 
             <!-- Cart Items List -->
-            <div class="bg-white rounded-xl sm:rounded-2xl border border-stone-200 divide-y divide-stone-100" id="cart-items-container">
-                <!-- Empty cart message will be shown by default -->
-                <div class="p-6 sm:p-8 md:p-12 text-center">
-                    <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-stone-100 flex items-center justify-center">
-                        <iconify-icon icon="lucide:shopping-cart" width="24" class="sm:w-8 text-stone-400"></iconify-icon>
+            <div class="bg-white rounded-xl sm:rounded-2xl border border-stone-200 divide-y divide-stone-100 overflow-hidden" id="cart-items-container">
+                @forelse($cart['items'] ?? [] as $item)
+                    <div class="p-4 sm:p-6 cart-item-transition" id="cart-item-{{ $item['id'] }}">
+                        <div class="flex gap-4 sm:gap-6">
+                            <!-- Product Image -->
+                            <div class="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg sm:rounded-xl bg-[#F0EFEC] flex items-center justify-center p-2 sm:p-3 flex-shrink-0">
+                                <img src="{{ !empty($item['image']) ? asset('storage/' . $item['image']) : asset('assets/images/placeholder.png') }}" 
+                                     alt="{{ $item['product_name'] }}" 
+                                     class="w-full h-full object-contain mix-blend-multiply">
+                            </div>
+                            
+                            <!-- Product Info -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0">
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="font-medium text-stone-900 text-sm sm:text-base truncate">{{ $item['product_name'] }}</h3>
+                                        <p class="text-xs text-stone-500 mb-2">{{ $item['sku'] ?? 'N/A' }}</p>
+                                        @if(!empty($item['attributes']))
+                                            <div class="flex flex-wrap gap-1 sm:gap-2 mb-3">
+                                                @foreach($item['attributes'] as $key => $value)
+                                                    <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-stone-100 text-stone-600 text-[10px] font-medium rounded uppercase tracking-wider">
+                                                        {{ $key }}: {{ $value }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="text-right sm:text-left">
+                                        <p class="text-base sm:text-lg font-semibold text-stone-900 mb-0.5 sm:mb-1">₹{{ number_format($item['unit_price'] ?? ($item['total'] / $item['quantity']), 2) }}</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Quantity Controls -->
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between mt-3 sm:mt-4 gap-3 sm:gap-0">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex items-center border border-stone-300 rounded-lg overflow-hidden">
+                                            <button onclick="changeQuantity('{{ $item['id'] }}', -1)" 
+                                                    class="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-stone-600 hover:bg-stone-50 transition-colors"
+                                                    id="minus-btn-{{ $item['id'] }}"
+                                                    {{ $item['quantity'] <= 1 ? 'disabled' : '' }}>
+                                                <iconify-icon icon="lucide:minus" width="14" class="sm:w-4"></iconify-icon>
+                                            </button>
+                                            <span class="w-10 h-8 sm:w-12 sm:h-10 flex items-center justify-center font-medium text-stone-900 border-x border-stone-300 text-sm" 
+                                                  id="quantity-{{ $item['id'] }}">{{ $item['quantity'] }}</span>
+                                            <button onclick="changeQuantity('{{ $item['id'] }}', 1)" 
+                                                    class="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-stone-600 hover:bg-stone-50 transition-colors"
+                                                    id="plus-btn-{{ $item['id'] }}">
+                                                <iconify-icon icon="lucide:plus" width="14" class="sm:w-4"></iconify-icon>
+                                            </button>
+                                        </div>
+                                        <button onclick="removeCartItem('{{ $item['id'] }}')" class="text-xs sm:text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
+                                            <iconify-icon icon="lucide:trash-2" width="12" class="sm:w-3.5"></iconify-icon>
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-base sm:text-lg font-bold text-stone-900" id="subtotal-{{ $item['id'] }}">₹{{ number_format($item['total'], 2) }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="text-base sm:text-lg font-medium text-stone-900 mb-2">Your cart is empty</h3>
-                    <p class="text-stone-500 text-sm sm:text-base mb-4 sm:mb-6">Add some Ayurvedic goodness to get started!</p>
-                    <a href="{{ route('customer.products.shop') }}" class="inline-flex items-center px-5 py-2.5 sm:px-6 sm:py-3 bg-emerald-900 text-white font-medium rounded-lg hover:bg-emerald-800 transition-colors text-sm sm:text-base">
-                        <iconify-icon icon="lucide:shopping-bag" width="16" class="sm:w-5 mr-2"></iconify-icon>
-                        Start Shopping
-                    </a>
-                </div>
+                @empty
+                    <div class="p-6 sm:p-8 md:p-12 text-center">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-stone-100 flex items-center justify-center">
+                            <iconify-icon icon="lucide:shopping-cart" width="24" class="sm:w-8 text-stone-400"></iconify-icon>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-medium text-stone-900 mb-2">Your cart is empty</h3>
+                        <p class="text-stone-500 text-sm sm:text-base mb-4 sm:mb-6">Add some Ayurvedic goodness to get started!</p>
+                        <a href="{{ route('customer.products.shop') }}" class="inline-flex items-center px-5 py-2.5 sm:px-6 sm:py-3 bg-emerald-900 text-white font-medium rounded-lg hover:bg-emerald-800 transition-colors text-sm sm:text-base">
+                            <iconify-icon icon="lucide:shopping-bag" width="16" class="sm:w-5 mr-2"></iconify-icon>
+                            Start Shopping
+                        </a>
+                    </div>
+                @endforelse
             </div>
 
             <!-- Coupon Code -->
@@ -75,14 +173,27 @@
                     <div class="flex-1">
                         <input type="text" id="coupon-code" 
                                placeholder="Enter coupon code" 
-                               class="w-full bg-white border border-stone-300 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                               value="{{ $cart['coupon_code'] ?? '' }}"
+                               class="w-full bg-white border border-stone-300 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 {{ ($cart['coupon_code'] ?? null) ? 'border-emerald-500' : '' }}">
                     </div>
-                    <button id="apply-coupon" class="px-5 sm:px-6 py-2.5 sm:py-3 bg-emerald-900 text-white font-medium rounded-lg hover:bg-emerald-800 transition-colors text-sm sm:text-base">
-                        Apply Coupon
-                    </button>
+                    @if($cart['coupon_code'] ?? null)
+                        <button onclick="removeCoupon()" id="coupon-btn" class="px-5 sm:px-6 py-2.5 sm:py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base">
+                            Remove
+                        </button>
+                    @else
+                        <button onclick="applyCoupon()" id="coupon-btn" class="px-5 sm:px-6 py-2.5 sm:py-3 bg-emerald-900 text-white font-medium rounded-lg hover:bg-emerald-800 transition-colors text-sm sm:text-base">
+                            Apply Coupon
+                        </button>
+                    @endif
                 </div>
                 <div class="mt-3 sm:mt-4 text-xs sm:text-sm text-stone-500">
-                    <p id="coupon-message">Available coupons: <span class="text-emerald-700 font-medium">AYURVEDA15</span> (15% off), <span class="text-emerald-700 font-medium">FIRSTORDER20</span> (20% off first order)</p>
+                    <p id="coupon-message">
+                        @if($cart['coupon_code'] ?? null)
+                            <span class="text-emerald-700 font-medium font-bold uppercase">"{{ $cart['coupon_code'] }}" Applied!</span>
+                        @else
+                            Available coupons: <span class="text-emerald-700 font-medium">AYURVEDA15</span> (15% off), <span class="text-emerald-700 font-medium">FIRSTORDER20</span> (20% off first order)
+                        @endif
+                    </p>
                 </div>
             </div>
         </div>
@@ -90,519 +201,340 @@
         <!-- Order Summary -->
         <div class="lg:col-span-1">
             <div class="lg:sticky lg:top-24">
-                <div class="bg-white rounded-xl sm:rounded-2xl border border-stone-200 p-4 sm:p-6">
+                <div class="bg-white rounded-xl sm:rounded-2xl border border-stone-200 p-4 sm:p-6 shadow-sm">
                     <h2 class="text-lg sm:text-xl font-semibold text-stone-900 mb-4 sm:mb-6">Order Summary</h2>
                     
                     <div class="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                         <div class="flex justify-between text-stone-600 text-sm sm:text-base">
-                            <span>Subtotal (<span id="item-count">0</span> items)</span>
-                            <span class="font-medium" id="subtotal">₹0.00</span>
+                            <span>Subtotal (<span id="item-count-summary">{{ $cart['items_count'] ?? 0 }}</span> items)</span>
+                            <span class="font-medium text-stone-900" id="order-subtotal">₹{{ number_format($cart['subtotal'] ?? 0, 2) }}</span>
                         </div>
                         <div class="flex justify-between text-stone-600 text-sm sm:text-base">
                             <span>Shipping</span>
-                            <span class="font-medium text-green-600" id="shipping">FREE</span>
+                            <span class="font-medium text-green-600" id="order-shipping">FREE</span>
                         </div>
-                        <div class="flex justify-between text-stone-600 text-sm sm:text-base">
-                            <span>Tax (18% GST)</span>
-                            <span class="font-medium" id="tax">₹0.00</span>
+                        <div class="flex justify-between text-stone-600 text-sm sm:text-base" id="tax-row">
+                             <span>Tax total</span>
+                            <span class="font-medium text-stone-900" id="order-tax">₹{{ number_format($cart['tax_total'] ?? 0, 2) }}</span>
                         </div>
-                        <div class="flex justify-between text-stone-600 text-sm sm:text-base hidden" id="discount-row">
-                            <span>Discount <span class="text-red-600" id="discount-percent"></span></span>
-                            <span class="font-medium text-red-600" id="discount">-₹0.00</span>
+                        <div class="flex justify-between text-stone-600 text-sm sm:text-base {{ ($cart['discount_total'] ?? 0) > 0 ? '' : 'hidden' }}" id="discount-row">
+                            <span>Discount</span>
+                            <span class="font-medium text-red-600" id="order-discount">-₹{{ number_format($cart['discount_total'] ?? 0, 2) }}</span>
                         </div>
                     </div>
                     
-                    <div class="border-t border-stone-200 pt-3 sm:pt-4 mb-4 sm:mb-6">
-                        <div class="flex justify-between text-base sm:text-lg font-semibold text-stone-900">
+                    <div class="border-t border-stone-200 pt-4 mb-6">
+                        <div class="flex justify-between text-xl font-bold text-stone-900">
                             <span>Total</span>
-                            <span id="total">₹0.00</span>
+                            <span id="order-total" class="text-emerald-800">₹{{ number_format($cart['grand_total'] ?? 0, 2) }}</span>
                         </div>
-                        <p class="text-xs sm:text-sm text-stone-500 mt-1">Including all taxes</p>
-                        <p class="text-xs text-emerald-600 mt-1">Free shipping on orders above ₹999</p>
+                        <p class="text-xs text-stone-500 mt-2">Including all taxes and shipping fees</p>
                     </div>
                     
-                    <button id="checkout-btn" disabled class="block w-full bg-stone-300 text-stone-500 text-center font-semibold py-3 sm:py-4 rounded-xl cursor-not-allowed mb-3 sm:mb-4 text-sm sm:text-base">
-                        Proceed to Checkout
-                    </button>
+                    @if(($cart['items_count'] ?? 0) > 0)
+                        <button onclick="window.location.href='{{ route('customer.checkout.index') }}'" 
+                                id="checkout-btn" 
+                                class="block w-full bg-emerald-900 text-white text-center font-bold py-4 rounded-xl hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-900/10 mb-4">
+                            Proceed to Checkout
+                        </button>
+                    @else
+                        <button disabled 
+                                id="checkout-btn" 
+                                class="block w-full bg-stone-200 text-stone-400 text-center font-bold py-4 rounded-xl cursor-not-allowed mb-4">
+                            Proceed to Checkout
+                        </button>
+                    @endif
                     
                     <div class="text-center">
-                        <p class="text-xs sm:text-sm text-stone-500 mb-2 sm:mb-3">or</p>
-                        <a href="{{ route('customer.products.shop') }}" class="text-xs sm:text-sm text-emerald-700 hover:text-emerald-800 font-medium">
+                        <a href="{{ route('customer.products.shop') }}" class="text-xs sm:text-sm text-emerald-700 hover:text-emerald-800 font-semibold border-b border-emerald-700/30 pb-0.5">
                             Continue Shopping
                         </a>
                     </div>
                 </div>
 
                 <!-- Safety Assurance -->
-                <div class="mt-4 sm:mt-6 bg-emerald-50 rounded-lg sm:rounded-xl p-4 sm:p-5 border border-emerald-200">
-                    <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                            <iconify-icon icon="lucide:shield-check" width="14" class="sm:w-4 text-emerald-700"></iconify-icon>
+                <div class="mt-6 bg-emerald-50/50 rounded-2xl p-6 border border-emerald-100">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center flex-shrink-0 text-white shadow-lg shadow-emerald-600/20">
+                            <iconify-icon icon="lucide:shield-check" width="20"></iconify-icon>
                         </div>
                         <div>
-                            <h4 class="font-medium text-emerald-800 text-sm sm:text-base">Safe & Secure Checkout</h4>
-                            <p class="text-xs text-emerald-700">256-bit SSL encryption</p>
+                            <h4 class="font-bold text-stone-900 text-sm">Safe & Secure Payment</h4>
+                            <p class="text-xs text-stone-500">Industry standard 256-bit SSL encryption</p>
                         </div>
                     </div>
                     
-                    <div class="space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                        <div class="flex items-center gap-2 text-emerald-700">
-                            <iconify-icon icon="lucide:check-circle" width="12" class="sm:w-3.5"></iconify-icon>
-                            <span>100% Ayurvedic & Natural</span>
+                    <div class="space-y-3">
+                        @foreach(['No Hidden Charges', 'Easy 30-day Returns', 'Free Delivery over ₹999'] as $perk)
+                        <div class="flex items-center gap-3 text-stone-600 text-xs">
+                            <iconify-icon icon="lucide:check-circle-2" width="14" class="text-emerald-600"></iconify-icon>
+                            <span>{{ $perk }}</span>
                         </div>
-                        <div class="flex items-center gap-2 text-emerald-700">
-                            <iconify-icon icon="lucide:check-circle" width="12" class="sm:w-3.5"></iconify-icon>
-                            <span>Free Shipping over ₹999</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-emerald-700">
-                            <iconify-icon icon="lucide:check-circle" width="12" class="sm:w-3.5"></iconify-icon>
-                            <span>30-Day Money Back Guarantee</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-emerald-700">
-                            <iconify-icon icon="lucide:check-circle" width="12" class="sm:w-3.5"></iconify-icon>
-                            <span>Cash on Delivery Available</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recommended Add-ons -->
-                <div class="mt-4 sm:mt-6">
-                    <h3 class="font-medium text-stone-900 mb-3 sm:mb-4 text-sm sm:text-base">Frequently Bought Together</h3>
-                    <div class="space-y-2 sm:space-y-3">
-                        <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border border-stone-200 rounded-lg">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#F0EFEC] flex items-center justify-center p-1 flex-shrink-0">
-                                <img src="https://www.vedherbsandayurveda.com/pachan-shakti.jpeg" 
-                                     alt="Brahmi Gritha" 
-                                     class="w-full h-full object-contain">
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs sm:text-sm font-medium text-stone-900 truncate">Brahmi Gritha</p>
-                                <p class="text-xs text-stone-500">Brain Tonic • 50g</p>
-                            </div>
-                            <div class="text-right flex-shrink-0">
-                                <p class="text-xs sm:text-sm font-semibold text-stone-900">₹850.00</p>
-                                <p class="text-xs text-stone-500">₹17.00/g</p>
-                                <button class="add-recommended text-xs text-emerald-700 hover:text-emerald-800 font-medium mt-0.5 sm:mt-1" 
-                                        data-id="rec1"
-                                        data-name="Brahmi Gritha" 
-                                        data-price="850.00" 
-                                        data-image="https://www.vedherbsandayurveda.com/pachan-shakti.jpeg" 
-                                        data-weight="50g">
-                                    Add
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border border-stone-200 rounded-lg">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#F0EFEC] flex items-center justify-center p-1 flex-shrink-0">
-                                <img src="https://www.vedherbsandayurveda.com/products-img/Power-Max.PNG" 
-                                     alt="Performance Pills" 
-                                     class="w-full h-full object-contain">
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs sm:text-sm font-medium text-stone-900 truncate">Unlock Your Prime</p>
-                                <p class="text-xs text-stone-500">Strength & Performance • 60 capsules</p>
-                            </div>
-                            <div class="text-right flex-shrink-0">
-                                <p class="text-xs sm:text-sm font-semibold text-stone-900">₹1,250.00</p>
-                                <p class="text-xs text-stone-500">₹20.83/capsule</p>
-                                <button class="add-recommended text-xs text-emerald-700 hover:text-emerald-800 font-medium mt-0.5 sm:mt-1"
-                                        data-id="rec2"
-                                        data-name="Unlock Your Prime" 
-                                        data-price="1250.00" 
-                                        data-image="https://www.vedherbsandayurveda.com/products-img/Power-Max.PNG" 
-                                        data-weight="60 capsules">
-                                    Add
-                                </button>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Recommendations -->
+    @if(count($recommendedProducts ?? []) > 0)
+    <div class="mt-12 md:mt-16">
+        <h3 class="text-xl font-bold text-stone-900 mb-6 flex items-center gap-2">
+            <iconify-icon icon="lucide:sparkles" class="text-emerald-600"></iconify-icon>
+            Frequently Bought Together
+        </h3>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            @foreach($recommendedProducts as $product)
+            <div class="bg-white rounded-xl border border-stone-100 p-4 hover:shadow-xl transition-shadow group relative">
+                <a href="{{ route('customer.products.details', $product['slug']) }}" class="block mb-4">
+                    <div class="aspect-square bg-[#F0EFEC] rounded-lg overflow-hidden flex items-center justify-center p-4">
+                        <img src="{{ !empty($product['main_image']) ? asset('storage/' . $product['main_image']) : asset('assets/images/placeholder.png') }}" 
+                             alt="{{ $product['name'] }}" 
+                             class="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                </a>
+                <h4 class="font-medium text-stone-900 text-sm mb-1 truncate">{{ $product['name'] }}</h4>
+                <div class="flex items-center justify-between mt-auto">
+                    <p class="font-bold text-emerald-800">₹{{ number_format($product['price'], 2) }}</p>
+                    <button class="add-to-cart-api text-emerald-700 p-2 rounded-full hover:bg-emerald-50 transition-colors" 
+                            data-variant-id="{{ $product['id'] }}" 
+                            title="Add to cart">
+                        <iconify-icon icon="lucide:shopping-cart" width="18"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
 </div>
+
+<!-- Notification Toast -->
+<div id="notificationToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="bg-stone-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3">
+        <div id="toastIcon">
+            <iconify-icon icon="lucide:check-circle" width="24" class="text-emerald-400"></iconify-icon>
+        </div>
+        <span id="toastMessage" class="font-medium text-sm">Action successful!</span>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Format Indian Rupees
-    function formatINR(amount) {
-        return '₹' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-    }
-    
-    // Format per unit price
-    function formatUnitPrice(price, weight) {
-        const unit = weight.includes('capsules') ? 'capsule' : 'g';
-        const unitValue = weight.includes('capsules') ? 
-            parseInt(weight) : 
-            parseFloat(weight.replace('g', ''));
+    // Axios Setup
+    axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+    axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    // Toast Utility
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('notificationToast');
+        const toastMsg = document.getElementById('toastMessage');
+        const toastIcon = document.getElementById('toastIcon');
         
-        if (unitValue > 0) {
-            const perUnit = (price / unitValue).toFixed(2);
-            return `₹${perUnit}/${unit}`;
-        }
-        return '';
+        toastMsg.textContent = message;
+        toastIcon.innerHTML = type === 'error' 
+            ? '<iconify-icon icon="lucide:alert-circle" width="24" class="text-red-400"></iconify-icon>'
+            : '<iconify-icon icon="lucide:check-circle" width="24" class="text-emerald-400"></iconify-icon>';
+        
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
     }
 
-    // Initialize cart in localStorage if not exists
-    if (!localStorage.getItem('cart')) {
-        localStorage.setItem('cart', JSON.stringify([]));
+    // Format Currency
+    function formatINR(sum) {
+        return '₹' + new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2 }).format(sum);
     }
-    
-    // Initialize coupon in localStorage if not exists
-    if (!localStorage.getItem('coupon')) {
-        localStorage.setItem('coupon', '');
-    }
-    
-    // Load cart data
-    loadCart();
-    
-    // Apply coupon button
-    document.getElementById('apply-coupon').addEventListener('click', function() {
-        const couponCode = document.getElementById('coupon-code').value.trim().toUpperCase();
-        const validCoupons = ['AYURVEDA15', 'FIRSTORDER20'];
-        
-        if (validCoupons.includes(couponCode)) {
-            localStorage.setItem('coupon', couponCode);
-            document.getElementById('coupon-message').innerHTML = 
-                `<span class="text-green-600 font-medium">Coupon "${couponCode}" applied successfully!</span>`;
-            updateCartTotals();
+
+    // Reload or Update Logic
+    function handleResponse(data) {
+        if (data.cart) {
+            updateSummary(data.cart);
+            if (window.updateCartCount) window.updateCartCount(data.cart_count);
         } else {
-            localStorage.setItem('coupon', '');
-            document.getElementById('coupon-message').innerHTML = 
-                'Invalid coupon code. Available coupons: <span class="text-emerald-700 font-medium">AYURVEDA15</span> (15% off), <span class="text-emerald-700 font-medium">FIRSTORDER20</span> (20% off first order)';
+            window.location.reload();
         }
-    });
-    
-    // Load saved coupon
-    const savedCoupon = localStorage.getItem('coupon');
-    if (savedCoupon) {
-        document.getElementById('coupon-code').value = savedCoupon;
-        document.getElementById('coupon-message').innerHTML = 
-            `<span class="text-green-600 font-medium">Coupon "${savedCoupon}" applied!</span>`;
     }
-    
-    // Add recommended items
-    document.querySelectorAll('.add-recommended').forEach(button => {
-        button.addEventListener('click', function() {
-            const product = {
-                id: this.getAttribute('data-id'),
-                name: this.getAttribute('data-name'),
-                price: parseFloat(this.getAttribute('data-price')),
-                image: this.getAttribute('data-image'),
-                weight: this.getAttribute('data-weight')
-            };
-            
-            addToCart(product);
-        });
-    });
-    
-    // Load cart items
-    function loadCart() {
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const container = document.getElementById('cart-items-container');
+
+    // Update Totals UI
+    function updateSummary(cart) {
+        document.getElementById('cart-count-display').textContent = cart.items_count;
+        document.getElementById('item-count-summary').textContent = cart.items_count;
+        document.getElementById('order-subtotal').textContent = formatINR(cart.subtotal);
+        document.getElementById('order-tax').textContent = formatINR(cart.tax_total);
+        document.getElementById('order-total').textContent = formatINR(cart.grand_total);
         
-        if (cart.length === 0) {
-            container.innerHTML = `
-                <div class="p-6 sm:p-8 md:p-12 text-center">
-                    <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-stone-100 flex items-center justify-center">
-                        <iconify-icon icon="lucide:shopping-cart" width="24" class="sm:w-8 text-stone-400"></iconify-icon>
-                    </div>
-                    <h3 class="text-base sm:text-lg font-medium text-stone-900 mb-2">Your cart is empty</h3>
-                    <p class="text-stone-500 text-sm sm:text-base mb-4 sm:mb-6">Add some Ayurvedic goodness to get started!</p>
-                    <a href="{{ route('customer.products.shop') }}" class="inline-flex items-center px-5 py-2.5 sm:px-6 sm:py-3 bg-emerald-900 text-white font-medium rounded-lg hover:bg-emerald-800 transition-colors text-sm sm:text-base">
-                        <iconify-icon icon="lucide:shopping-bag" width="16" class="sm:w-5 mr-2"></iconify-icon>
-                        Start Shopping
-                    </a>
-                </div>
-            `;
-            updateCartTotals();
-            return;
-        }
-        
-        let html = '';
-        cart.forEach((item, index) => {
-            const unitPrice = formatUnitPrice(item.price, item.weight);
-            
-            html += `
-                <div class="p-4 sm:p-6 cart-item" data-index="${index}">
-                    <div class="flex gap-4 sm:gap-6">
-                        <!-- Product Image -->
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg sm:rounded-xl bg-[#F0EFEC] flex items-center justify-center p-2 sm:p-3 flex-shrink-0">
-                            <img src="${item.image}" 
-                                 alt="${item.name}" 
-                                 class="w-full h-full object-contain">
-                        </div>
-                        
-                        <!-- Product Info -->
-                        <div class="flex-1 min-w-0">
-                            <div class="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0">
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="font-medium text-stone-900 text-sm sm:text-base truncate">${item.name}</h3>
-                                    <p class="text-xs text-stone-500 mb-2">${item.weight}</p>
-                                    <div class="flex flex-wrap gap-1 sm:gap-2 mb-3">
-                                        <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-100 text-emerald-800 text-xs font-medium rounded">Vata Balancing</span>
-                                        <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">Stress Relief</span>
-                                    </div>
-                                </div>
-                                <div class="text-right sm:text-left">
-                                    <p class="text-base sm:text-lg font-semibold text-stone-900 mb-0.5 sm:mb-1">${formatINR(item.price)}</p>
-                                    ${unitPrice ? `<p class="text-xs text-stone-500">${unitPrice}</p>` : ''}
-                                </div>
-                            </div>
-                            
-                            <!-- Quantity Controls -->
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between mt-3 sm:mt-4 gap-3 sm:gap-0">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex items-center border border-stone-300 rounded-lg">
-                                        <button class="quantity-minus w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-stone-600 hover:bg-stone-50" data-index="${index}">
-                                            <iconify-icon icon="lucide:minus" width="14" class="sm:w-4"></iconify-icon>
-                                        </button>
-                                        <input type="number" class="quantity-input w-10 h-8 sm:w-12 sm:h-10 text-center font-medium text-stone-900 border-x border-stone-300 text-sm" 
-                                               value="${item.quantity}" min="1" max="10" data-index="${index}">
-                                        <button class="quantity-plus w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-stone-600 hover:bg-stone-50" data-index="${index}">
-                                            <iconify-icon icon="lucide:plus" width="14" class="sm:w-4"></iconify-icon>
-                                        </button>
-                                    </div>
-                                    <button class="remove-item text-xs sm:text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1" data-index="${index}">
-                                        <iconify-icon icon="lucide:trash-2" width="12" class="sm:w-3.5"></iconify-icon>
-                                        Remove
-                                    </button>
-                                </div>
-                                <div class="text-right sm:text-left">
-                                    <p class="text-base sm:text-lg font-semibold text-stone-900">${formatINR(item.price * item.quantity)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-        
-        // Add event listeners
-        addCartEventListeners();
-        updateCartTotals();
-    }
-    
-    // Add cart event listeners
-    function addCartEventListeners() {
-        // Quantity minus
-        document.querySelectorAll('.quantity-minus').forEach(button => {
-            button.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                updateQuantity(index, -1);
-            });
-        });
-        
-        // Quantity plus
-        document.querySelectorAll('.quantity-plus').forEach(button => {
-            button.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                updateQuantity(index, 1);
-            });
-        });
-        
-        // Quantity input change
-        document.querySelectorAll('.quantity-input').forEach(input => {
-            input.addEventListener('change', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                const newQuantity = parseInt(this.value);
-                if (newQuantity >= 1 && newQuantity <= 10) {
-                    updateQuantity(index, 0, newQuantity);
-                }
-            });
-        });
-        
-        // Remove item
-        document.querySelectorAll('.remove-item').forEach(button => {
-            button.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                removeFromCart(index);
-            });
-        });
-    }
-    
-    // Update quantity
-    function updateQuantity(index, change, newQuantity = null) {
-        const cart = JSON.parse(localStorage.getItem('cart'));
-        
-        if (newQuantity !== null) {
-            cart[index].quantity = newQuantity;
-        } else {
-            cart[index].quantity += change;
-            if (cart[index].quantity < 1) cart[index].quantity = 1;
-            if (cart[index].quantity > 10) cart[index].quantity = 10;
-        }
-        
-        localStorage.setItem('cart', JSON.stringify(cart));
-        
-        // Update UI
-        const input = document.querySelector(`.quantity-input[data-index="${index}"]`);
-        if (input) input.value = cart[index].quantity;
-        
-        updateCartTotals();
-        updateHeaderCartCount();
-    }
-    
-    // Remove item from cart
-    function removeFromCart(index) {
-        const cart = JSON.parse(localStorage.getItem('cart'));
-        cart.splice(index, 1);
-        localStorage.setItem('cart', JSON.stringify(cart));
-        
-        // Reload cart
-        loadCart();
-        updateHeaderCartCount();
-    }
-    
-    // Add item to cart
-    function addToCart(product) {
-        const cart = JSON.parse(localStorage.getItem('cart'));
-        
-        // Check if item already exists
-        const existingIndex = cart.findIndex(item => 
-            item.id === product.id
-        );
-        
-        if (existingIndex > -1) {
-            cart[existingIndex].quantity += 1;
-        } else {
-            cart.push({
-                ...product,
-                quantity: 1
-            });
-        }
-        
-        localStorage.setItem('cart', JSON.stringify(cart));
-        
-        // Reload cart
-        loadCart();
-        updateHeaderCartCount();
-        
-        // Show success message
-        showSuccessMessage(`${product.name} added to cart!`);
-    }
-    
-    // Update cart totals
-    function updateCartTotals() {
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        
-        // Calculate subtotal
-        let subtotal = 0;
-        let itemCount = 0;
-        
-        cart.forEach(item => {
-            subtotal += item.price * item.quantity;
-            itemCount += item.quantity;
-        });
-        
-        // Calculate shipping (free over ₹999)
-        const shipping = subtotal > 999 ? 0 : 99;
-        
-        // Calculate tax (18% GST)
-        const tax = subtotal * 0.18;
-        
-        // Calculate discount
-        const coupon = localStorage.getItem('coupon');
-        let discountRate = 0;
-        if (coupon === 'AYURVEDA15') discountRate = 0.15;
-        if (coupon === 'FIRSTORDER20') discountRate = 0.20;
-        
-        const discount = subtotal * discountRate;
-        
-        // Calculate total
-        const total = subtotal + shipping + tax - discount;
-        
-        // Update UI
-        document.getElementById('cart-count').textContent = itemCount;
-        document.getElementById('item-count').textContent = itemCount;
-        document.getElementById('subtotal').textContent = formatINR(subtotal);
-        document.getElementById('shipping').textContent = shipping === 0 ? 'FREE' : formatINR(shipping);
-        document.getElementById('shipping').className = shipping === 0 ? 'font-medium text-green-600' : 'font-medium';
-        document.getElementById('tax').textContent = formatINR(tax);
-        
-        // Update discount row
         const discountRow = document.getElementById('discount-row');
-        if (discount > 0) {
+        if (cart.discount_total > 0) {
             discountRow.classList.remove('hidden');
-            document.getElementById('discount-percent').textContent = `(-${(discountRate * 100)}%)`;
-            document.getElementById('discount').textContent = '-' + formatINR(discount);
+            document.getElementById('order-discount').textContent = '- ' + formatINR(cart.discount_total);
         } else {
             discountRow.classList.add('hidden');
         }
-        
-        document.getElementById('total').textContent = formatINR(total);
-        
-        // Update checkout button
+
         const checkoutBtn = document.getElementById('checkout-btn');
-        if (itemCount > 0) {
+        if (cart.items_count > 0) {
             checkoutBtn.disabled = false;
-            checkoutBtn.className = 'block w-full bg-emerald-900 text-white text-center font-semibold py-3 sm:py-4 rounded-xl hover:bg-emerald-800 transition-colors mb-3 sm:mb-4 text-sm sm:text-base';
-            checkoutBtn.textContent = 'Proceed to Checkout';
-            checkoutBtn.onclick = function() {
-                window.location.href = '{{ route("customer.checkout") }}';
-            };
+            checkoutBtn.className = "block w-full bg-emerald-900 text-white text-center font-bold py-4 rounded-xl hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-900/10 mb-4";
         } else {
             checkoutBtn.disabled = true;
-            checkoutBtn.className = 'block w-full bg-stone-300 text-stone-500 text-center font-semibold py-3 sm:py-4 rounded-xl cursor-not-allowed mb-3 sm:mb-4 text-sm sm:text-base';
-            checkoutBtn.textContent = 'Proceed to Checkout';
-            checkoutBtn.onclick = null;
+            checkoutBtn.className = "block w-full bg-stone-200 text-stone-400 text-center font-bold py-4 rounded-xl cursor-not-allowed mb-4";
+            window.location.reload(); // To show empty state
         }
     }
-    
-    // Update header cart count
-    function updateHeaderCartCount() {
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        let totalItems = 0;
-        cart.forEach(item => {
-            totalItems += item.quantity;
-        });
+
+    // API Calls
+    async function changeQuantity(itemId, delta) {
+        const qtyEl = document.getElementById(`quantity-${itemId}`);
+        const current = parseInt(qtyEl.textContent);
+        const next = current + delta;
         
-        // Update header badge
-        const headerCartLink = document.querySelector('a[href="{{ route("customer.cart") }}"]');
-        let badge = headerCartLink.querySelector('.cart-badge');
+        if (next < 1) return removeCartItem(itemId);
         
-        if (totalItems > 0) {
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.className = 'cart-badge absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 flex items-center justify-center min-w-[16px] h-4 sm:min-w-[20px] sm:h-5 px-1 bg-emerald-500 text-white text-[10px] sm:text-xs font-medium rounded-full';
-                headerCartLink.appendChild(badge);
+        try {
+            const response = await axios.put(`/cart/update/${itemId}`, { quantity: next });
+            if (response.data.success) {
+                const updatedItems = response.data.data.cart.items;
+                const updatedItem = updatedItems.find(i => i.id == itemId);
+                
+                qtyEl.textContent = updatedItem.quantity;
+                document.getElementById(`subtotal-${itemId}`).textContent = formatINR(updatedItem.total);
+                document.getElementById(`minus-btn-${itemId}`).disabled = updatedItem.quantity <= 1;
+                
+                updateSummary(response.data.data.cart);
             }
-            badge.innerHTML = `
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative">${totalItems}</span>
-            `;
-        } else if (badge) {
-            badge.remove();
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Update failed', 'error');
         }
     }
-    
-    // Show success message
-    function showSuccessMessage(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'fixed top-20 sm:top-24 right-4 sm:right-6 z-50 bg-emerald-100 border border-emerald-300 text-emerald-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in-down text-sm sm:text-base';
-        messageDiv.innerHTML = `
-            <iconify-icon icon="lucide:check-circle" width="16" class="sm:w-5 text-emerald-600"></iconify-icon>
-            <span>${message}</span>
-        `;
+
+    async function removeCartItem(itemId) {
+        const result = await Swal.fire({
+            title: 'Remove Item?',
+            text: "Are you sure you want to remove this item from your cart?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#065f46',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, remove it!'
+        });
+
+        if (!result.isConfirmed) return;
+
+        const itemRow = document.getElementById(`cart-item-${itemId}`);
         
-        document.body.appendChild(messageDiv);
-        
-        setTimeout(() => {
-            messageDiv.style.opacity = '0';
-            messageDiv.style.transform = 'translateY(-10px)';
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 300);
-        }, 3000);
+        try {
+            itemRow.style.opacity = '0.5';
+            const response = await axios.delete(`/cart/remove/${itemId}`);
+            if (response.data.success) {
+                itemRow.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => {
+                    itemRow.remove();
+                    updateSummary(response.data.data.cart);
+                    Swal.fire({
+                        title: 'Removed!',
+                        text: 'Item has been removed from your cart.',
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                }, 300);
+            }
+        } catch (error) {
+             itemRow.style.opacity = '1';
+             showToast('Failed to remove item', 'error');
+        }
     }
-    
-    // Initialize header cart count on page load
-    updateHeaderCartCount();
-});
+
+    async function applyCoupon() {
+        const code = document.getElementById('coupon-code').value.trim();
+        const btn = document.getElementById('coupon-btn');
+        if (!code) return showToast('Enter code', 'error');
+        
+        btn.classList.add('btn-loading');
+        try {
+            const response = await axios.post('/cart/apply-coupon', { coupon_code: code });
+            if (response.data.success) {
+                showToast('Coupon applied!');
+                window.location.reload();
+            } else {
+                showToast(response.data.message, 'error');
+            }
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Invalid coupon', 'error');
+        } finally {
+            btn.classList.remove('btn-loading');
+        }
+    }
+
+    async function removeCoupon() {
+        const btn = document.getElementById('coupon-btn');
+        btn.classList.add('btn-loading');
+        try {
+            const response = await axios.post('/cart/remove-coupon');
+            if (response.data.success) {
+                window.location.reload();
+            }
+        } catch (error) {
+            showToast('Failed to remove coupon', 'error');
+        } finally {
+            btn.classList.remove('btn-loading');
+        }
+    }
+
+    async function clearCart() {
+        const result = await Swal.fire({
+            title: 'Clear Cart?',
+            text: "Are you sure you want to remove all items from your cart?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#065f46',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, clear it!'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await axios.delete('/cart/clear');
+            if (response.data.success) {
+                Swal.fire({
+                    title: 'Cleared!',
+                    text: 'Your cart is now empty.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            }
+        } catch (error) {
+            showToast('Failed to clear cart', 'error');
+        }
+    }
+
+    // Recommendation Add to Cart
+    document.querySelectorAll('.add-to-cart-api').forEach(btn => {
+        btn.onclick = async () => {
+            const id = btn.dataset.variantId;
+            btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="animate-spin" width="18"></iconify-icon>';
+            try {
+                const response = await axios.post('/cart/add', { variant_id: id, quantity: 1 });
+                if (response.data.success) {
+                    showToast('Item added!');
+                    window.location.reload(); // Easy reload to refresh cart items
+                }
+            } catch (error) {
+                showToast('Failed to add item', 'error');
+                btn.innerHTML = '<iconify-icon icon="lucide:shopping-cart" width="18"></iconify-icon>';
+            }
+        };
+    });
 </script>
 @endpush

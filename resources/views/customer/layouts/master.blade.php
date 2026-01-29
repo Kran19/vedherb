@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Ved Herbs & Ayurveda')</title>
-    
+
     <!-- Preconnect to CDNs -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://code.iconify.design">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <!-- Critical CSS -->
     <style>
         /* Critical styles for initial rendering */
@@ -20,11 +22,11 @@
             color: #292524;
             visibility: hidden;
         }
-        
+
         body.loaded {
             visibility: visible;
         }
-        
+
         /* Header critical styles */
         .header-container {
             position: sticky;
@@ -38,7 +40,7 @@
             display: flex;
             align-items: center;
         }
-        
+
         .header-inner {
             max-width: 1280px;
             width: 100%;
@@ -48,28 +50,28 @@
             align-items: center;
             justify-content: space-between;
         }
-        
+
         .icons-section {
             display: flex;
             align-items: center;
             gap: 1.5rem;
             color: #57534e;
         }
-        
+
         .icon-link {
             padding: 0.25rem;
             transition: color 0.2s;
         }
-        
+
         .icon-link:hover {
             color: #065f46;
         }
-        
+
         .cart-icon-container {
             position: relative;
             display: inline-block;
         }
-        
+
         .cart-badge {
             position: absolute;
             top: -4px;
@@ -84,7 +86,7 @@
             font-weight: 600;
             z-index: 10;
         }
-        
+
         .cart-badge-ping {
             position: absolute;
             top: 0;
@@ -94,11 +96,11 @@
             border-radius: 50%;
             z-index: 1;
         }
-        
+
         .desktop-nav {
             display: none;
         }
-        
+
         @media (min-width: 768px) {
             .desktop-nav {
                 display: flex;
@@ -108,17 +110,17 @@
                 font-weight: 500;
                 color: #57534e;
             }
-            
+
             .nav-link {
                 transition: all 0.2s;
             }
-            
+
             .nav-link:hover {
                 color: #065f46;
                 font-size: 1.25rem;
             }
         }
-        
+
         .mobile-menu-sidebar {
             position: fixed;
             top: 0;
@@ -132,11 +134,11 @@
             z-index: 100;
             overflow-y: auto;
         }
-        
+
         .mobile-menu-sidebar.open {
             left: 0;
         }
-        
+
         .mobile-menu-overlay {
             position: fixed;
             top: 0;
@@ -149,42 +151,42 @@
             visibility: hidden;
             transition: all 0.3s ease;
         }
-        
+
         .mobile-menu-overlay.open {
             opacity: 1;
             visibility: visible;
         }
-        
+
         body.menu-open {
             overflow: hidden;
         }
-        
+
         ::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         ::-webkit-scrollbar-track {
             background: #f5f5f4;
         }
-        
+
         ::-webkit-scrollbar-thumb {
             background: #d6d3d1;
             border-radius: 3px;
         }
-        
+
         ::-webkit-scrollbar-thumb:hover {
             background: #a8a29e;
         }
-        
+
         [data-lucide] {
             opacity: 0;
             transition: opacity 0.2s;
         }
-        
+
         .lucide-loaded [data-lucide] {
             opacity: 1;
         }
-        
+
         .offer-bar {
             background-color: #065f46;
             color: #d1fae5;
@@ -194,19 +196,19 @@
             text-align: center;
             letter-spacing: 0.05em;
         }
-        
+
         .search-container {
             display: none;
             align-items: center;
             position: relative;
         }
-        
+
         @media (min-width: 768px) {
             .search-container {
                 display: flex;
             }
         }
-        
+
         .search-input {
             width: 224px;
             padding-left: 2.25rem;
@@ -220,13 +222,13 @@
             outline: none;
             transition: all 0.2s;
         }
-        
+
         .search-input:focus {
             background-color: white;
             border-color: #059669;
             box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
         }
-        
+
         .search-icon {
             position: absolute;
             left: 0.75rem;
@@ -234,13 +236,13 @@
             height: 1rem;
             color: #a8a29e;
         }
-        
+
         .mobile-menu-button {
             display: block;
             padding: 0.5rem;
             color: #57534e;
         }
-        
+
         @media (min-width: 768px) {
             .mobile-menu-button {
                 display: none;
@@ -351,7 +353,7 @@
                 padding-left: 1rem;
                 padding-right: 1rem;
             }
-            
+
             .testimonial {
                 min-width: 85vw !important;
                 padding: 1.5rem;
@@ -363,7 +365,7 @@
                 max-width: 300px;
             }
         }
-        
+
         @media (min-width: 641px) and (max-width: 1024px) {
             .testimonial {
                 min-width: 350px !important;
@@ -371,15 +373,34 @@
         }
 
         @keyframes checkmarkBounce {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .added-animation {
@@ -394,7 +415,7 @@
             .intro-logo {
                 max-width: 250px;
             }
-            
+
             .intro-loader {
                 width: 100px;
             }
@@ -419,70 +440,85 @@
         }
 
         @keyframes ping {
-            75%, 100% {
+
+            75%,
+            100% {
                 transform: scale(2);
                 opacity: 0;
             }
         }
     </style>
-    
+
     <!-- Load Tailwind with defer -->
     <script src="https://cdn.tailwindcss.com" defer></script>
-    
+
     <!-- Load Google Fonts -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+        media="print" onload="this.media='all'">
     <noscript>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap">
     </noscript>
-    
+
     <!-- Single Lucide import -->
     <script src="https://unpkg.com/lucide@latest" defer></script>
-    
+
     <!-- Iconify CDN -->
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" defer></script>
-    
+
+    <!-- Axios for API calls -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- Additional Styles -->
     @stack('styles')
 </head>
+
 <body>
 
-<!-- Top Offer Bar -->
-<div class="offer-bar">
-    Up to 60% OFF • Free Shipping over ₹999
-</div>
-
-<!-- Header / Navigation -->
-@include('customer.partials.header')
-
-<!-- Main Content -->
-<main>
-    @yield('content')
-</main>
-
-<!-- Footer -->
-@include('customer.partials.footer')
-
-
-{{-- <!-- Cart Toast Notification -->
-<div id="cart-toast" class="cart-toast">
-    <div class="check-icon">
-        <i data-lucide="check" class="w-3 h-3"></i>
+    <!-- Top Offer Bar -->
+    <div class="offer-bar">
+        Up to 60% OFF • Free Shipping over ₹999
     </div>
-    <span id="toast-message">Product added to cart!</span>
-</div> --}}
 
-<!-- Scripts -->
-@include('customer.partials.scripts')
+    <!-- Header / Navigation -->
+    @include('customer.partials.header')
 
-<script>
-// Prevent FOUC
-document.addEventListener('DOMContentLoaded', function() {
-    document.body.classList.add('loaded');
-});
-</script>
+    <!-- Main Content -->
+    <main>
+        @yield('content')
+    </main>
 
-<!-- Additional Scripts -->
-@stack('scripts')
+    <!-- Footer -->
+    @include('customer.partials.footer')
+
+
+    <!-- Cart Toast Notification -->
+    <div id="cart-toast" class="cart-toast">
+        <div class="check-icon">
+            <i data-lucide="check" class="w-3 h-3"></i>
+        </div>
+        <span id="toast-message">Product added to cart!</span>
+    </div>
+
+    <!-- Scripts -->
+    @include('customer.partials.scripts')
+
+    <script>
+        // Prevent FOUC
+        document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('loaded');
+        });
+    </script>
+
+    <!-- Additional Scripts -->
+    @stack('scripts')
+
+    {{-- Page-specific scripts --}}
+    @yield('scripts')
 </body>
+
 </html>

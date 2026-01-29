@@ -26,6 +26,7 @@ class TestimonialController extends Controller
             'designation' => 'nullable|string|max:255',
             'message' => 'required|string',
             'rating' => 'required|integer|min:1|max:5',
+            'image' => 'nullable|string', // Added image field
             'is_active' => 'boolean',
         ]);
 
@@ -46,6 +47,7 @@ class TestimonialController extends Controller
             'designation' => 'nullable|string|max:255',
             'message' => 'required|string',
             'rating' => 'required|integer|min:1|max:5',
+            'image' => 'nullable|string', // Added image field
             'is_active' => 'boolean',
         ]);
 

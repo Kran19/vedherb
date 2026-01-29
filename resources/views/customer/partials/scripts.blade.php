@@ -1,6 +1,6 @@
 <script>
     // Initialize everything when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         // Initialize Lucide icons
         function initializeLucide() {
             if (typeof lucide !== 'undefined') {
@@ -8,7 +8,7 @@
                 document.body.classList.add('lucide-loaded');
             }
         }
-        
+
         if (typeof lucide !== 'undefined') {
             initializeLucide();
         } else {
@@ -40,17 +40,17 @@
         if (mobileMenuToggle) {
             mobileMenuToggle.addEventListener('click', openMobileMenu);
         }
-        
+
         if (mobileMenuClose) {
             mobileMenuClose.addEventListener('click', closeMobileMenu);
         }
-        
+
         if (mobileMenuOverlay) {
             mobileMenuOverlay.addEventListener('click', closeMobileMenu);
         }
 
         // Close mobile menu on escape key
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && mobileMenuSidebar.classList.contains('open')) {
                 closeMobileMenu();
             }
@@ -64,9 +64,9 @@
 
         // Close mobile menu on window resize (when switching to desktop)
         let resizeTimeout;
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(function() {
+            resizeTimeout = setTimeout(function () {
                 if (window.innerWidth >= 768 && mobileMenuSidebar.classList.contains('open')) {
                     closeMobileMenu();
                 }
@@ -75,22 +75,24 @@
 
         // Update cart badge after a short delay to ensure DOM is ready
         setTimeout(updateCartBadge, 50);
-        
+
         // Initialize intro overlay
         initializeIntroOverlay();
-        
+
         // Initialize cart functionality
         initializeCart();
     });
 
     // Cart badge update function
-    function updateCartBadge() {
+    async function updateCartBadge(count = null) {
         try {
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            let totalItems = 0;
-            cart.forEach(item => {
-                totalItems += item.quantity || 0;
-            });
+            let totalItems;
+            if (count !== null) {
+                totalItems = count;
+            } else {
+                const response = await axios.get('{{ route('customer.cart.count') }}');
+                totalItems = response.data.count;
+            }
 
             const badge = document.getElementById('header-cart-badge');
             if (!badge) return;
@@ -112,18 +114,14 @@
         }
     }
 
-    // Listen for cart updates
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'cart') {
-            updateCartBadge();
-        }
-    });
+    // Expose updateCartBadge globally
+    window.updateCartBadge = updateCartBadge;
 
     // Custom event for cart updates within same page
-    window.addEventListener('cartUpdated', updateCartBadge);
+    window.addEventListener('cartUpdated', () => updateCartBadge());
 
     // Update badge after page is fully loaded
-    window.addEventListener('load', function() {
+    window.addEventListener('load', function () {
         setTimeout(updateCartBadge, 100);
     });
 
@@ -131,181 +129,111 @@
     function initializeIntroOverlay() {
         const introOverlay = document.getElementById('intro-overlay');
         const loaderFill = document.getElementById('intro-loader-fill');
-        
+
         if (!introOverlay || !loaderFill) return;
-        
-        // Show intro overlay on page load
-        function showIntroOverlay() {
-            // Make sure overlay is visible (remove hidden class)
-            introOverlay.classList.remove('hidden');
-            
-            // Start the loader animation after a short delay
+
+        // Start the loader animation after a short delay
+        setTimeout(() => {
+            if (loaderFill) loaderFill.style.width = '100%';
+
             setTimeout(() => {
-                // Animate loader to 100%
-                loaderFill.style.width = '100%';
-                
-                // Hide overlay after loader completes
-                setTimeout(() => {
-                    // Add hidden class to fade out
-                    introOverlay.classList.add('hidden');
-                }, 1500); // Wait for loader to complete
-            }, 1000); // Initial delay before loader starts
-        }
-        
-        // Show intro overlay
-        showIntroOverlay();
+                if (introOverlay) introOverlay.classList.add('hidden');
+            }, 1000);
+        }, 500);
     }
 
     // Cart functionality
     function initializeCart() {
-        // Initialize cart in localStorage if not exists
-        if (!localStorage.getItem('cart')) {
-            localStorage.setItem('cart', JSON.stringify([]));
+        // ... (existing code inside initializeCart)
+    }
+
+    // Expose functions globally for onclick handlers
+    async function addToCart(variantId, quantity = 1, button = null) {
+        if (!variantId) {
+            Swal.fire('Oops!', 'Please select a variant first', 'warning');
+            return;
         }
 
-        // Toast notification elements
-        const cartToast = document.getElementById('cart-toast');
-        const toastMessage = document.getElementById('toast-message');
-        
-        // Function to show toast notification
-        function showToast(message) {
-            if (!cartToast || !toastMessage) return;
-            
-            toastMessage.textContent = message;
-            cartToast.classList.add('show');
-            
-            // Auto hide after 2 seconds
-            setTimeout(() => {
-                cartToast.classList.remove('show');
-            }, 2000);
-        }
-        
-        // Function to add product to cart
-        function addToCart(productData) {
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            
-            // Check if product already exists in cart
-            const existingIndex = cart.findIndex(item => item.id === productData.id);
-            
-            if (existingIndex > -1) {
-                // Increment quantity if product exists
-                cart[existingIndex].quantity += 1;
-            } else {
-                // Add new product to cart
-                cart.push({
-                    ...productData,
-                    quantity: 1
+        try {
+            if (button) {
+                button.disabled = true;
+                button.classList.add('opacity-50');
+            }
+
+            const response = await axios.post('{{ route('customer.cart.add') }}', {
+                variant_id: variantId,
+                quantity: quantity
+            });
+
+            if (response.data.success) {
+                updateCartBadge();
+                Swal.fire({
+                    title: 'Added!',
+                    text: response.data.message || 'Product added to cart',
+                    icon: 'success',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
                 });
-            }
-            
-            // Save to localStorage
-            localStorage.setItem('cart', JSON.stringify(cart));
-            
-            // Update header cart count
-            updateCartBadge();
-            
-            // Show success message
-            showToast(`${productData.name} added to cart!`);
-            
-            // Trigger haptic feedback on mobile
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        }
-        
-        // Function to handle mobile add button (plus icon)
-        function handleMobileAdd(button) {
-            // Get product data
-            const productData = {
-                id: button.getAttribute('data-id'),
-                name: button.getAttribute('data-name'),
-                price: parseFloat(button.getAttribute('data-price')),
-                image: button.getAttribute('data-image'),
-                weight: button.getAttribute('data-weight')
-            };
-            
-            // Add to cart
-            addToCart(productData);
-            
-            // Change icon to checkmark
-            const icon = button.querySelector('i');
-            if (icon) {
-                // Change icon
-                button.innerHTML = '<i data-lucide="check" class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600"></i>';
-                
-                // Update lucide icons
-                if (window.lucide) {
-                    lucide.createIcons();
+
+                // Trigger success animation if button exists
+                if (button) {
+                    const originalHTML = button.innerHTML;
+                    button.innerHTML = '<iconify-icon icon="lucide:check" width="16"></iconify-icon> Added';
+                    setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                        button.disabled = false;
+                        button.classList.remove('opacity-50');
+                    }, 2000);
                 }
-                
-                // Add animation class
-                button.classList.add('added-animation');
-                button.classList.remove('bg-white/95');
-                button.classList.add('bg-emerald-100', 'border-emerald-300');
-                
-                // Reset after 1.5 seconds
-                setTimeout(() => {
-                    button.innerHTML = '<i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>';
-                    if (window.lucide) {
-                        lucide.createIcons();
-                    }
-                    button.classList.remove('added-animation', 'bg-emerald-100', 'border-emerald-300');
-                    button.classList.add('bg-white/95');
-                }, 1500);
+            } else {
+                Swal.fire('Error', response.data.message || 'Failed to add item', 'error');
+                if (button) {
+                    button.disabled = false;
+                    button.classList.remove('opacity-50');
+                }
+            }
+        } catch (error) {
+            console.error('Add to cart error:', error);
+            Swal.fire('Error', error.response?.data?.message || 'Error connecting to server', 'error');
+            if (button) {
+                button.disabled = false;
+                button.classList.remove('opacity-50');
             }
         }
-        
-        // Function to handle desktop add button
-        function handleDesktopAdd(button) {
-            // Get product data
-            const productData = {
-                id: button.getAttribute('data-id'),
-                name: button.getAttribute('data-name'),
-                price: parseFloat(button.getAttribute('data-price')),
-                image: button.getAttribute('data-image'),
-                weight: button.getAttribute('data-weight')
-            };
-            
-            // Add to cart
-            addToCart(productData);
-            
-            // Change button text and style
-            const originalHTML = button.innerHTML;
-            button.innerHTML = `
-                <iconify-icon icon="lucide:check" width="14" height="14"></iconify-icon>
-                <span>Added ✓</span>
-            `;
-            button.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-300');
-            button.classList.remove('hover:bg-stone-50');
-            
-            // Disable button
-            button.disabled = true;
-            
-            // Reset after 2 seconds
-            setTimeout(() => {
-                button.innerHTML = originalHTML;
-                button.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-300');
-                button.classList.add('hover:bg-stone-50');
-                button.disabled = false;
-            }, 2000);
+    }
+
+    async function removeFromWishlist(itemId) {
+        const result = await Swal.fire({
+            title: 'Remove from wishlist?',
+            text: "Are you sure you want to remove this item?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, remove it!'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await axios.post('{{ route('customer.wishlist.remove') }}', {
+                    item_id: itemId
+                });
+
+                if (response.data.success) {
+                    Swal.fire('Removed!', response.data.message, 'success')
+                        .then(() => {
+                            location.reload();
+                        });
+                } else {
+                    Swal.fire('Error', response.data.message || 'Failed to remove item', 'error');
+                }
+            } catch (error) {
+                console.error('Remove wishlist error:', error);
+                Swal.fire('Error', error.response?.data?.message || 'Error connecting to server', 'error');
+            }
         }
-        
-        // Add event listeners to mobile add buttons
-        document.querySelectorAll('.mobile-add-btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                handleMobileAdd(this);
-            });
-        });
-        
-        // Add event listeners to desktop add buttons
-        document.querySelectorAll('.desktop-add-btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                handleDesktopAdd(this);
-            });
-        });
     }
 </script>

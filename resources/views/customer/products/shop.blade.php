@@ -1,1091 +1,752 @@
 @extends('customer.layouts.master')
 
-@section('title', 'Shop - Ved Herbs & Ayurveda')
-
-@push('styles')
-<style>
-/* Shop Page Critical CSS */
-.shop-container {
-    padding: 2rem 1rem;
-}
-
-@media (min-width: 640px) {
-    .shop-container {
-        padding: 3rem 1.5rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-container {
-        padding: 4rem 2rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .shop-container {
-        padding: 2rem;
-    }
-}
-
-.shop-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    margin-bottom: 1.5rem;
-    gap: 1rem;
-}
-
-@media (min-width: 640px) {
-    .shop-header {
-        margin-bottom: 2rem;
-        gap: 1.5rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-header {
-        margin-bottom: 3rem;
-    }
-}
-
-.shop-header-content {
-    max-width: 56rem;
-    padding: 0 1rem;
-}
-
-.shop-title {
-    font-family: serif;
-    font-size: 1.5rem;
-    font-weight: 500;
-    letter-spacing: -0.025em;
-    color: #1c1917;
-    text-align: center;
-    margin-bottom: 0.75rem;
-}
-
-@media (min-width: 640px) {
-    .shop-title {
-        font-size: 1.875rem;
-        margin-bottom: 1rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-title {
-        font-size: 2.25rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .shop-title {
-        font-size: 3rem;
-    }
-}
-
-.shop-title span {
-    display: block;
-}
-
-.shop-description {
-    color: #78716c;
-    font-size: 0.875rem;
-    font-weight: 300;
-    line-height: 1.75;
-}
-
-@media (min-width: 640px) {
-    .shop-description {
-        font-size: 1rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-description {
-        font-size: 1.125rem;
-    }
-}
-
-.shop-filters-desktop {
-    display: none;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
-
-@media (min-width: 768px) {
-    .shop-filters-desktop {
-        display: flex;
-    }
-}
-
-.shop-filter-btn {
-    padding: 0.375rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    cursor: pointer;
-    border: none;
-}
-
-@media (min-width: 640px) {
-    .shop-filter-btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-    }
-}
-
-.shop-filter-btn.active {
-    background-color: #1c1917;
-    color: white;
-}
-
-.shop-filter-btn.active:hover {
-    background-color: #292524;
-}
-
-.shop-filter-btn:not(.active) {
-    background-color: white;
-    border: 1px solid #e7e5e4;
-    color: #57534e;
-}
-
-.shop-filter-btn:not(.active):hover {
-    border-color: #d6d3d1;
-    color: #1c1917;
-}
-
-.shop-filters-mobile {
-    width: 100%;
-    max-width: 28rem;
-    margin: 0 auto 1.5rem;
-}
-
-@media (min-width: 768px) {
-    .shop-filters-mobile {
-        display: none;
-    }
-}
-
-.shop-mobile-select {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border-radius: 9999px;
-    background-color: white;
-    border: 1px solid #e7e5e4;
-    color: #57534e;
-    font-size: 0.875rem;
-    font-weight: 500;
-    appearance: none;
-    outline: none;
-}
-
-.shop-product-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-}
-
-@media (min-width: 640px) {
-    .shop-product-grid {
-        gap: 1.5rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-product-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .shop-product-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-@media (min-width: 1280px) {
-    .shop-product-grid {
-        grid-template-columns: repeat(5, 1fr);
-    }
-}
-
-.shop-product-item {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.3s;
-}
-
-.shop-product-image-container {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 4/5;
-    background-color: #f0efec;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    border: 1px solid #f5f5f4;
-}
-
-@media (min-width: 640px) {
-    .shop-product-image-container {
-        border-radius: 0.75rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-product-image-container {
-        border-radius: 1rem;
-    }
-}
-
-.shop-product-badges {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    z-index: 10;
-    display: flex;
-    gap: 0.25rem;
-}
-
-@media (min-width: 640px) {
-    .shop-product-badges {
-        top: 0.75rem;
-        left: 0.75rem;
-        gap: 0.5rem;
-    }
-}
-
-.shop-product-badge {
-    padding: 0.125rem 0.375rem;
-    background-color: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px);
-    border-radius: 0.25rem;
-    font-size: 9px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #57534e;
-    border: 1px solid rgba(231, 229, 228, 0.5);
-}
-
-@media (min-width: 640px) {
-    .shop-product-badge {
-        padding: 0.25rem 0.5rem;
-        font-size: 10px;
-    }
-}
-
-.shop-mobile-add-btn {
-    position: absolute;
-    bottom: 0.5rem;
-    right: 0.5rem;
-    z-index: 20;
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #57534e;
-    border: 1px solid rgba(231, 229, 228, 0.5);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.2s;
-    cursor: pointer;
-}
-
-@media (min-width: 640px) {
-    .shop-mobile-add-btn {
-        bottom: 0.75rem;
-        right: 0.75rem;
-        width: 2.25rem;
-        height: 2.25rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-mobile-add-btn {
-        display: none;
-    }
-}
-
-.shop-mobile-add-btn:hover {
-    background-color: #fafaf9;
-}
-
-.shop-product-link {
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-
-.shop-product-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: center;
-    transition: transform 0.7s ease-out;
-    opacity: 1;
-    mix-blend-mode: multiply;
-}
-
-.shop-product-item:hover .shop-product-image {
-    transform: scale(1.05);
-}
-
-.shop-desktop-add-btn {
-    display: none;
-    position: absolute;
-    bottom: 0.75rem;
-    right: 0.75rem;
-    left: 0.75rem;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    color: #1c1917;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    transform: translateY(1rem);
-    opacity: 0;
-    transition: all 0.3s;
-    border: 1px solid #f5f5f4;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    cursor: pointer;
-}
-
-@media (min-width: 640px) {
-    .shop-desktop-add-btn {
-        padding: 0.75rem;
-        border-radius: 0.75rem;
-        font-size: 0.875rem;
-        gap: 0.5rem;
-        bottom: 1rem;
-        right: 1rem;
-        left: 1rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-desktop-add-btn {
-        display: flex;
-    }
-}
-
-.shop-desktop-add-btn:hover {
-    background-color: #fafaf9;
-}
-
-.shop-product-item:hover .shop-desktop-add-btn {
-    transform: translateY(0);
-    opacity: 1;
-}
-
-.shop-product-info {
-    margin-top: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-@media (min-width: 640px) {
-    .shop-product-info {
-        margin-top: 1rem;
-    }
-}
-
-.shop-product-details {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-
-.shop-product-text {
-    padding-right: 0.5rem;
-}
-
-.shop-product-title {
-    font-size: 0.875rem;
-    font-family: serif;
-    font-weight: 500;
-    color: #1c1917;
-    transition: color 0.2s;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-}
-
-@media (min-width: 640px) {
-    .shop-product-title {
-        font-size: 1rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-product-title {
-        font-size: 1.125rem;
-    }
-}
-
-.shop-product-item:hover .shop-product-title {
-    color: #047857;
-}
-
-.shop-product-subtitle {
-    font-size: 10px;
-    font-weight: 500;
-    color: #a8a29e;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-top: 0.125rem;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-}
-
-@media (min-width: 640px) {
-    .shop-product-subtitle {
-        font-size: 0.75rem;
-    }
-}
-
-.shop-product-price {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #1c1917;
-    flex-shrink: 0;
-}
-
-@media (min-width: 640px) {
-    .shop-product-price {
-        font-size: 1.125rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .shop-product-price {
-        font-size: 1.25rem;
-    }
-}
-</style>
-@endpush
+@section('title', $title ?? 'All Products - Ved Herbs & Ayurveda')
+@section('meta_description', $meta_description ?? 'Browse our complete collection of natural healing and wellness solutions.')
+
+@section('styles')
+    <style>
+        .filter-section {
+            transition: all 0.3s ease;
+        }
+
+        .product-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .material-tag {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .attribute-tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .discount-badge {
+            background: #dc2626;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .color-swatch {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        /* Fix for consistent image size */
+        .product-image-container {
+            aspect-ratio: 4/5;
+            overflow: hidden;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+            mix-blend-mode: multiply;
+        }
+
+        .product-image:hover {
+            transform: scale(1.05);
+        }
+
+        /* List view styles */
+        .product-card.list-view {
+            flex-direction: row !important;
+            height: auto !important;
+        }
+
+        .list-view .product-image-container {
+            width: 250px;
+            aspect-ratio: 1/1 !important;
+            flex-shrink: 0;
+        }
+
+        .list-view .product-details {
+            flex: 1;
+            padding: 1.5rem;
+        }
+
+        /* Button styles */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn-add-to-cart {
+            flex: 1;
+            background: #059669;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-add-to-cart:hover {
+            background: #047857;
+        }
+
+        .btn-add-to-cart:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .btn-wishlist {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-wishlist:hover {
+            background: #f0fdf4;
+            color: #059669;
+            border-color: #059669;
+        }
+
+        /* Grid view button positioning */
+        .grid-view .action-buttons {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            right: 1rem;
+            opacity: 1;
+        }
+
+        .grid-view .btn-add-to-cart {
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* List view button positioning */
+        .list-view .action-buttons {
+            margin-top: auto;
+        }
+    </style>
+@endsection
 
 @section('content')
-<!-- Products Section -->
-<div class="shop-container">
-    <div class="shop-header">
-        <div class="shop-header-content">
-            <h2 class="shop-title">
-                <span>Premium Ayurvedic Products</span>
-                <span>Natural Healing & Wellness Solutions</span>
-            </h2>
-            <p class="shop-description">
-                Authentic formulations with scientifically proven ingredients • ISO/GMP Certified • 100% Natural
+    <!-- Breadcrumb -->
+    <div class="bg-stone-50 py-4">
+        <div class="max-w-7xl mx-auto px-4">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ route('customer.home.index') }}"
+                            class="inline-flex items-center text-sm text-stone-700 hover:text-emerald-700">
+                            <i class="fas fa-home mr-2"></i>
+                            Home
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                            <span class="ml-3 text-sm font-medium text-gray-700">All Products</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">Premium Ayurvedic Collection</h1>
+            <p class="text-gray-600 text-lg max-w-3xl mx-auto">
+                Discover authentic formulations for your wellness journey, crafted with nature's purest ingredients.
             </p>
         </div>
 
-        <!-- Filters (Visible Only on Desktop) -->
-        <div class="shop-filters-desktop" id="filter-buttons">
-            <!-- All -->
-            <button class="shop-filter-btn active" data-filter="all">
-                🌿 All <span id="all-count"></span>
-            </button>
-
-            <!-- Other filter buttons -->
-            <button class="shop-filter-btn" data-filter="prime-gold-power">
-                🌟 Prime Gold Power <span id="prime-gold-power-count"></span>
-            </button>
-
-            <button class="shop-filter-btn" data-filter="power-gel">
-                😌 Power Gel <span id="power-gel-count"></span>
-            </button>
-
-            <button class="shop-filter-btn" data-filter="veerya-shakti">
-                💪 Veerya Shakti <span id="veerya-shakti-count"></span>
-            </button>
-
-            <button class="shop-filter-btn" data-filter="pachan-shakti">
-                🌱 Pachan Shakti <span id="pachan-shakti-count"></span>
-            </button>
-
-            <button class="shop-filter-btn" data-filter="prime-time">
-                👨 Prime Time <span id="prime-time-count"></span>
-            </button>
-
-            <button class="shop-filter-btn" data-filter="ayushakti">
-                ⚡ Ayushakti <span id="ayushakti-count"></span>
-            </button>
-
-            <button class="shop-filter-btn" data-filter="stree-shakti">
-                👩 Stree Shakti <span id="stree-shakti-count"></span>
-            </button>
-
-            <button class="shop-filter-btn" data-filter="powermax-oil">
-                🦵 PowerMax Oil <span id="powermax-oil-count"></span>
-            </button>
-        </div>
-
-        <!-- Mobile Filters Dropdown -->
-        <div class="shop-filters-mobile">
-            <select id="mobile-filter" class="shop-mobile-select">
-                <option value="all">🌿 All Products</option>
-                <option value="prime-gold-power">🌟 Prime Gold Power</option>
-                <option value="power-gel">😌 Power Gel</option>
-                <option value="veerya-shakti">💪 Veerya Shakti</option>
-                <option value="pachan-shakti">🌱 Pachan Shakti</option>
-                <option value="prime-time">👨 Prime Time</option>
-                <option value="ayushakti">⚡ Ayushakti</option>
-                <option value="stree-shakti">👩 Stree Shakti</option>
-                <option value="powermax-oil">🦵 PowerMax Oil</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- Product Grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 md:gap-8" id="product-grid">
-        <!-- Product 1 - Power Gel -->
-        <div class="group relative flex flex-col product-item" data-category="power-gel">
-            <div class="relative w-full aspect-[4/5] bg-[#F0EFEC] rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-stone-100">
-                <!-- Badges -->
-                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex gap-1 sm:gap-2">
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Vata</span>
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Stress</span>
-                </div>
-                
-                <!-- Mobile Cart Icon (Bottom Right) - Hidden on Desktop -->
-                <button class="md:hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-stone-700 border border-stone-200/50 shadow-sm mobile-add-btn"
-                        data-id="1"
-                        data-name="Power Gel"
-                        data-price="599"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Power-Gel.PNG"
-                        data-weight="Herbal Performance Gel">
-                    <i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                </button>
-                
-                <a href="{{ route('customer.products.details', ['slug' => 'power-gel']) }}">
-                    <img 
-                        src="https://www.vedherbsandayurveda.com/products-img/Power-Gel.PNG"
-                        alt="Ashwagandha Bottle"
-                        class="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-100 mix-blend-multiply"
-                    />
-                </a>
-
-                <!-- Quick Add Button (Visible on Hover - Hidden on Mobile) -->
-                <button class="hidden md:flex absolute bottom-3 sm:bottom-4 right-3 sm:right-4 left-3 sm:left-4 bg-white/95 backdrop-blur-md text-stone-900 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium shadow-lg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 border border-stone-100 items-center justify-center gap-1 sm:gap-2 hover:bg-stone-50 desktop-add-btn"
-                        data-id="1"
-                        data-name="Power Gel"
-                        data-price="599"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Power-Gel.PNG"
-                        data-weight="Herbal Performance Gel">
-                    <iconify-icon icon="lucide:shopping-bag" width="14" height="14"></iconify-icon>
-                    Add to Cart
-                </button>
+        @if (session('success'))
+            <div class="mb-6 p-4 bg-green-100 text-green-700 rounded-lg">
+                {{ session('success') }}
             </div>
+        @endif
 
-            <div class="mt-3 sm:mt-4 flex flex-col gap-1">
-                <a href="{{ route('customer.products.details', ['slug' => 'power-gel']) }}" class="group-hover:text-sage-800 transition-colors">
-                    <div class="flex justify-between items-start">
-                        <div class="pr-2">
-                            <h3 class="text-sm sm:text-base md:text-lg font-serif font-medium text-stone-900 group-hover:text-sage-800 transition-colors line-clamp-1">
-                                Power Gel
-                            </h3>
-                            <p class="text-[10px] sm:text-xs font-medium text-stone-400 uppercase tracking-widest mt-0.5 line-clamp-1">Herbal Performance Gel</p>
-                        </div>
-                        <p class="text-base sm:text-lg md:text-xl font-medium text-stone-900 shrink-0">₹599</p>
+        @if (isset($error))
+            <div class="mb-6 p-4 bg-red-100 text-red-700 rounded-lg">
+                {{ $error }}
+            </div>
+        @endif
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Sidebar Filters -->
+            <div class="lg:w-1/4">
+                <div class="bg-white rounded-xl shadow p-5 sticky top-6 filter-section">
+                    <!-- Filter Header -->
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="text-lg font-bold text-gray-800">Filters</h3>
+                        @if (request()->hasAny([
+                                'search',
+                                'min_price',
+                                'max_price',
+                                'category_id',
+                                'brand_id',
+                                'in_stock',
+                                'is_featured',
+                                'is_new',
+                                'is_bestseller',
+                            ]))
+                            <a href="{{ route('customer.products.list') }}"
+                                class="text-sm text-emerald-700 hover:text-emerald-800">Clear All</a>
+                        @endif
                     </div>
-                </a>
-            </div>
-        </div>
 
-        <!-- Product 2 - Veerya Shakti -->
-        <div class="group relative flex flex-col product-item" data-category="veerya-shakti">
-            <div class="relative w-full aspect-[4/5] bg-[#F0EFEC] rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-stone-100">
-                <!-- Badges -->
-                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex gap-1 sm:gap-2">
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Tridosha</span>
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Detox</span>
-                </div>
-                
-                <!-- Mobile Cart Icon (Bottom Right) - Hidden on Desktop -->
-                <button class="md:hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-stone-700 border border-stone-200/50 shadow-sm mobile-add-btn"
-                        data-id="2"
-                        data-name="Veerya Shakti"
-                        data-price="1249"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Veerya-Shakti.PNG"
-                        data-weight="Ayurvedic Powder">
-                    <i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                </button>
-
-                <a href="{{ route('customer.products.details', ['slug' => 'veerya-shakti']) }}">
-                    <img 
-                        src="https://www.vedherbsandayurveda.com/products-img/Veerya-Shakti.PNG"
-                        alt="Triphala Powder"
-                        class="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-100 mix-blend-multiply"
-                    />
-                </a>
-
-                <!-- Quick Add Button (Visible on Hover - Hidden on Mobile) -->
-                <button class="hidden md:flex absolute bottom-3 sm:bottom-4 right-3 sm:right-4 left-3 sm:left-4 bg-white/95 backdrop-blur-md text-stone-900 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium shadow-lg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 border border-stone-100 items-center justify-center gap-1 sm:gap-2 hover:bg-stone-50 desktop-add-btn"
-                        data-id="2"
-                        data-name="Veerya Shakti"
-                        data-price="1249"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Veerya-Shakti.PNG"
-                        data-weight="Ayurvedic Powder">
-                    <iconify-icon icon="lucide:shopping-bag" width="14" height="14"></iconify-icon>
-                    Add to Cart
-                </button>
-            </div>
-
-            <div class="mt-3 sm:mt-4 flex flex-col gap-1">
-                <a href="{{ route('customer.products.details', ['slug' => 'veerya-shakti']) }}" class="group-hover:text-sage-800 transition-colors">
-                    <div class="flex justify-between items-start">
-                        <div class="pr-2">
-                            <h3 class="text-sm sm:text-base md:text-lg font-serif font-medium text-stone-900 group-hover:text-sage-800 transition-colors line-clamp-1">
-                                Veerya Shakti
-                            </h3>
-                            <p class="text-[10px] sm:text-xs font-medium text-stone-400 uppercase tracking-widest mt-0.5 line-clamp-1">Ayurvedic Powder</p>
+                    <!-- Search Form -->
+                    <form method="GET" action="{{ route('customer.products.list') }}" class="mb-5">
+                        <div class="relative">
+                            <input type="text" name="search" value="{{ $search ?? '' }}"
+                                placeholder="Search products..."
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                         </div>
-                        <p class="text-base sm:text-lg md:text-xl font-medium text-stone-900 shrink-0">₹1249</p>
-                    </div>
-                </a>
-            </div>
-        </div>
+                    </form>
 
-        <!-- Product 3 - Prime Time -->
-        <div class="group relative flex flex-col product-item" data-category="prime-time">
-            <div class="relative w-full aspect-[4/5] bg-[#F0EFEC] rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-stone-100">
-                <!-- Badges -->
-                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex gap-1 sm:gap-2">
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Pitta</span>
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Glow</span>
-                </div>
-                
-                <!-- Mobile Cart Icon (Bottom Right) - Hidden on Desktop -->
-                <button class="md:hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-stone-700 border border-stone-200/50 shadow-sm mobile-add-btn"
-                        data-id="3"
-                        data-name="Prime Time"
-                        data-price="1599"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Prime-Time.PNG"
-                        data-weight="Herbal Paste">
-                    <i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                </button>
-
-                <a href="{{ route('customer.products.details', ['slug' => 'prime-time']) }}">
-                    <img 
-                        src="https://www.vedherbsandayurveda.com/products-img/Prime-Time.PNG"
-                        alt="Kumkumadi Oil"
-                        class="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-100 mix-blend-multiply"
-                    />
-                </a>
-
-                <!-- Quick Add Button (Visible on Hover - Hidden on Mobile) -->
-                <button class="hidden md:flex absolute bottom-3 sm:bottom-4 right-3 sm:right-4 left-3 sm:left-4 bg-white/95 backdrop-blur-md text-stone-900 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium shadow-lg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 border border-stone-100 items-center justify-center gap-1 sm:gap-2 hover:bg-stone-50 desktop-add-btn"
-                        data-id="3"
-                        data-name="Prime Time"
-                        data-price="1599"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Prime-Time.PNG"
-                        data-weight="Herbal Paste">
-                    <iconify-icon icon="lucide:shopping-bag" width="14" height="14"></iconify-icon>
-                    Add to Cart
-                </button>
-            </div>
-
-            <div class="mt-3 sm:mt-4 flex flex-col gap-1">
-                <a href="{{ route('customer.products.details', ['slug' => 'prime-time']) }}" class="group-hover:text-sage-800 transition-colors">
-                    <div class="flex justify-between items-start">
-                        <div class="pr-2">
-                            <h3 class="text-sm sm:text-base md:text-lg font-serif font-medium text-stone-900 group-hover:text-sage-800 transition-colors line-clamp-1">
-                                Prime Time
-                            </h3>
-                            <p class="text-[10px] sm:text-xs font-medium text-stone-400 uppercase tracking-widest mt-0.5 line-clamp-1">Herbal Paste</p>
+                    <!-- Categories -->
+                    @if (isset($filters['categories']) && count($filters['categories']) > 0)
+                        <div class="mb-5">
+                            <h4 class="font-semibold text-gray-800 mb-3">Categories</h4>
+                            <div class="space-y-2 max-h-60 overflow-y-auto">
+                                @foreach ($filters['categories'] as $category)
+                                    <label
+                                        class="flex items-center justify-between p-2 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors">
+                                        <div class="flex items-center">
+                                            <input type="checkbox" name="category_id" value="{{ $category['id'] }}"
+                                                class="category-filter h-4 w-4 text-emerald-600 rounded"
+                                                {{ request('category_id') == $category['id'] ? 'checked' : '' }}
+                                                onchange="this.form.submit()">
+                                            <span class="text-gray-700 ml-3">{{ $category['name'] }}</span>
+                                        </div>
+                                        <span class="text-sm text-gray-500">{{ $category['count'] }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
                         </div>
-                        <p class="text-base sm:text-lg md:text-xl font-medium text-stone-900 shrink-0">₹1599</p>
+                    @endif
+
+                    <!-- Price Range -->
+                    <div class="mb-5">
+                        <h4 class="font-semibold text-gray-800 mb-3">Price Range</h4>
+                        <form method="GET" action="{{ route('customer.products.list') }}" id="priceForm"
+                            class="space-y-4">
+                            <div class="flex justify-between text-sm text-gray-600">
+                                <span>₹{{ number_format($filters['price_range']['min'] ?? 0) }}</span>
+                                <span>₹{{ number_format($filters['price_range']['max'] ?? 5000) }}</span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <input type="number" name="min_price" value="{{ $minPrice ?? '' }}" placeholder="Min"
+                                    min="0" max="{{ $filters['price_range']['max'] ?? 5000 }}"
+                                    class="w-1/2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="number" name="max_price" value="{{ $maxPrice ?? '' }}" placeholder="Max"
+                                    min="0" max="{{ $filters['price_range']['max'] ?? 5000 }}"
+                                    class="w-1/2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                            <button type="submit"
+                                class="w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+                                Apply Price
+                            </button>
+                        </form>
                     </div>
-                </a>
-            </div>
-        </div>
 
-        <!-- Product 4 - Pachan Shakti -->
-        <div class="group relative flex flex-col product-item" data-category="pachan-shakti">
-            <div class="relative w-full aspect-[4/5] bg-[#F0EFEC] rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-stone-100">
-                <!-- Badges -->
-                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex gap-1 sm:gap-2">
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Kapha</span>
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Energy</span>
-                </div>
-                
-                <!-- Mobile Cart Icon (Bottom Right) - Hidden on Desktop -->
-                <button class="md:hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-stone-700 border border-stone-200/50 shadow-sm mobile-add-btn"
-                        data-id="4"
-                        data-name="Pachan Shakti Powder"
-                        data-price="299"
-                        data-image="https://www.vedherbsandayurveda.com/pachan-shakti.jpeg"
-                        data-weight="Ayurvedic Digestive Powder">
-                    <i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                </button>
-
-                <a href="{{ route('customer.products.details', ['slug' => 'pachan-shakti']) }}">
-                    <img 
-                        src="https://www.vedherbsandayurveda.com/pachan-shakti.jpeg"
-                        alt="Brahmi Pearls"
-                        class="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-100 mix-blend-multiply"
-                    />
-                </a>
-
-                <!-- Quick Add Button (Visible on Hover - Hidden on Mobile) -->
-                <button class="hidden md:flex absolute bottom-3 sm:bottom-4 right-3 sm:right-4 left-3 sm:left-4 bg-white/95 backdrop-blur-md text-stone-900 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium shadow-lg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 border border-stone-100 items-center justify-center gap-1 sm:gap-2 hover:bg-stone-50 desktop-add-btn"
-                        data-id="4"
-                        data-name="Pachan Shakti Powder"
-                        data-price="299"
-                        data-image="https://www.vedherbsandayurveda.com/pachan-shakti.jpeg"
-                        data-weight="Ayurvedic Digestive Powder">
-                    <iconify-icon icon="lucide:shopping-bag" width="14" height="14"></iconify-icon>
-                    Add to Cart
-                </button>
-            </div>
-
-            <div class="mt-3 sm:mt-4 flex flex-col gap-1">
-                <a href="{{ route('customer.products.details', ['slug' => 'pachan-shakti']) }}" class="group-hover:text-sage-800 transition-colors">
-                    <div class="flex justify-between items-start">
-                        <div class="pr-2">
-                            <h3 class="text-sm sm:text-base md:text-lg font-serif font-medium text-stone-900 group-hover:text-sage-800 transition-colors line-clamp-1">
-                                Pachan Shakti Powder
-                            </h3>
-                            <p class="text-[10px] sm:text-xs font-medium text-stone-400 uppercase tracking-widest mt-0.5 line-clamp-1">Ayurvedic Digestive Powder</p>
+                    <!-- Brand Filter -->
+                    @if (isset($filters['brands']) && count($filters['brands']) > 0)
+                        <div class="mb-5">
+                            <h4 class="font-semibold text-gray-800 mb-3">Brands</h4>
+                            <div class="space-y-2 max-h-60 overflow-y-auto">
+                                @foreach ($filters['brands'] as $brand)
+                                    <label
+                                        class="flex items-center justify-between p-2 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors">
+                                        <div class="flex items-center">
+                                            <input type="checkbox" name="brand_id" value="{{ $brand['id'] }}"
+                                                class="brand-filter h-4 w-4 text-emerald-600 rounded"
+                                                {{ request('brand_id') == $brand['id'] ? 'checked' : '' }}
+                                                onchange="this.form.submit()">
+                                            <span class="text-gray-700 ml-3">{{ $brand['name'] }}</span>
+                                        </div>
+                                        <span class="text-sm text-gray-500">{{ $brand['count'] }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
                         </div>
-                        <p class="text-base sm:text-lg md:text-xl font-medium text-stone-900 shrink-0">₹299</p>
+                    @endif
+
+                    <!-- Availability -->
+                    <div class="mb-5">
+                        <h4 class="font-semibold text-gray-800 mb-3">Availability</h4>
+                        <label class="flex items-center p-2 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors">
+                            <input type="checkbox" name="in_stock" value="1" class="h-4 w-4 text-emerald-600 rounded"
+                                {{ ($inStock ?? false) ? 'checked' : '' }} onchange="this.form.submit()">
+                            <span class="text-gray-700 ml-3">In Stock Only</span>
+                        </label>
                     </div>
-                </a>
-            </div>
-        </div>
 
-        <!-- Product 5 - PowerMax Oil -->
-        <div class="group relative flex flex-col product-item" data-category="powermax-oil">
-            <div class="relative w-full aspect-[4/5] bg-[#F0EFEC] rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-stone-100">
-                <!-- Badges -->
-                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex gap-1 sm:gap-2">
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Best Seller</span>
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Occasional Use</span>
-                </div>
-                
-                <!-- Mobile Cart Icon (Bottom Right) - Hidden on Desktop -->
-                <button class="md:hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-stone-700 border border-stone-200/50 shadow-sm mobile-add-btn"
-                        data-id="5"
-                        data-name="PowerMax Oil"
-                        data-price="1099"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Power-Max.PNG"
-                        data-weight="Ayurvedic Massage Oil">
-                    <i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                </button>
-
-                <a href="{{ route('customer.products.details', ['slug' => 'powermax-oil']) }}">
-                    <img 
-                        src="https://www.vedherbsandayurveda.com/products-img/Power-Max.PNG"
-                        alt="Performance Pills"
-                        class="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-100 mix-blend-multiply"
-                    />
-                </a>
-
-                <!-- Quick Add Button (Visible on Hover - Hidden on Mobile) -->
-                <button class="hidden md:flex absolute bottom-3 sm:bottom-4 right-3 sm:right-4 left-3 sm:left-4 bg-white/95 backdrop-blur-md text-stone-900 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium shadow-lg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 border border-stone-100 items-center justify-center gap-1 sm:gap-2 hover:bg-stone-50 desktop-add-btn"
-                        data-id="5"
-                        data-name="PowerMax Oil"
-                        data-price="1099"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Power-Max.PNG"
-                        data-weight="Ayurvedic Massage Oil">
-                    <iconify-icon icon="lucide:shopping-bag" width="14" height="14"></iconify-icon>
-                    Add to Cart
-                </button>
-            </div>
-
-            <div class="mt-3 sm:mt-4 flex flex-col gap-1">
-                <a href="{{ route('customer.products.details', ['slug' => 'powermax-oil']) }}" class="group-hover:text-sage-800 transition-colors">
-                    <div class="flex justify-between items-start">
-                        <div class="pr-2">
-                            <h3 class="text-sm sm:text-base md:text-lg font-serif font-medium text-stone-900 group-hover:text-sage-800 transition-colors line-clamp-1">
-                                PowerMax Oil
-                            </h3>
-                            <p class="text-[10px] sm:text-xs font-medium text-stone-400 uppercase tracking-widest mt-0.5 line-clamp-1">Ayurvedic Massage Oil</p>
+                    <!-- Special Filters -->
+                    <div class="space-y-3">
+                        <h4 class="font-semibold text-gray-800 mb-2">Special Collections</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_featured' => 1])) }}"
+                                class="text-center py-2 px-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm">
+                                <i class="fas fa-star mr-1"></i> Featured
+                            </a>
+                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_new' => 1])) }}"
+                                class="text-center py-2 px-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm">
+                                <i class="fas fa-bolt mr-1"></i> New arrivals
+                            </a>
+                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_bestseller' => 1])) }}"
+                                class="text-center py-2 px-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm">
+                                <i class="fas fa-fire mr-1"></i> Best sellers
+                            </a>
+                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['has_discount' => 1])) }}"
+                                class="text-center py-2 px-3 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 text-sm">
+                                <i class="fas fa-tag mr-1"></i> On Sale
+                            </a>
                         </div>
-                        <p class="text-base sm:text-lg md:text-xl font-medium text-stone-900 shrink-0">₹1099</p>
                     </div>
-                </a>
-            </div>
-        </div>
-
-        <!-- Product 6 - Prime Gold Power -->
-        <div class="group relative flex flex-col product-item" data-category="prime-gold-power">
-            <div class="relative w-full aspect-[4/5] bg-[#F0EFEC] rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-stone-100">
-                <!-- Badges -->
-                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex gap-1 sm:gap-2">
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Best Seller</span>
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Occasional Use</span>
                 </div>
-                
-                <!-- Mobile Cart Icon (Bottom Right) - Hidden on Desktop -->
-                <button class="md:hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-stone-700 border border-stone-200/50 shadow-sm mobile-add-btn"
-                        data-id="6"
-                        data-name="Prime Gold Power"
-                        data-price="975"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Prime-Gold.PNG"
-                        data-weight="Golden Ball Pills">
-                    <i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                </button>
-
-                <a href="{{ route('customer.products.details', ['slug' => 'prime-gold-power']) }}">
-                    <img 
-                        src="https://www.vedherbsandayurveda.com/products-img/Prime-Gold.PNG"
-                        alt="Performance Pills"
-                        class="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-100 mix-blend-multiply"
-                    />
-                </a>
-
-                <!-- Quick Add Button (Visible on Hover - Hidden on Mobile) -->
-                <button class="hidden md:flex absolute bottom-3 sm:bottom-4 right-3 sm:right-4 left-3 sm:left-4 bg-white/95 backdrop-blur-md text-stone-900 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium shadow-lg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 border border-stone-100 items-center justify-center gap-1 sm:gap-2 hover:bg-stone-50 desktop-add-btn"
-                        data-id="6"
-                        data-name="Prime Gold Power"
-                        data-price="975"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Prime-Gold.PNG"
-                        data-weight="Golden Ball Pills">
-                    <iconify-icon icon="lucide:shopping-bag" width="14" height="14"></iconify-icon>
-                    Add to Cart
-                </button>
             </div>
 
-            <div class="mt-3 sm:mt-4 flex flex-col gap-1">
-                <a href="{{ route('customer.products.details', ['slug' => 'prime-gold-power']) }}" class="group-hover:text-sage-800 transition-colors">
-                    <div class="flex justify-between items-start">
-                        <div class="pr-2">
-                            <h3 class="text-sm sm:text-base md:text-lg font-serif font-medium text-stone-900 group-hover:text-sage-800 transition-colors line-clamp-1">
-                                Prime Gold Power
-                            </h3>
-                            <p class="text-[10px] sm:text-xs font-medium text-stone-400 uppercase tracking-widest mt-0.5 line-clamp-1">Golden Ball Pills</p>
-                        </div>
-                        <p class="text-base sm:text-lg md:text-xl font-medium text-stone-900 shrink-0">₹975</p>
+            <!-- Products Grid -->
+            <div class="lg:w-3/4">
+                <!-- Results Header -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <p class="text-gray-700">
+                            @if (isset($paginator['total']) && $paginator['total'] > 0)
+                                Showing <span class="font-semibold">{{ $paginator['from'] ?? 0 }}</span> to
+                                <span class="font-semibold">{{ $paginator['to'] ?? 0 }}</span> of
+                                <span class="font-semibold">{{ $paginator['total'] ?? 0 }}</span> products
+                            @else
+                                No products found
+                            @endif
+                        </p>
+                        @if (!empty($search))
+                            <p class="text-sm text-gray-600 mt-1">
+                                Search results for: "<span class="font-semibold">{{ $search }}</span>"
+                            </p>
+                        @endif
                     </div>
-                </a>
-            </div>
-        </div>
 
-        <!-- Product 7 - Ayushakti -->
-        <div class="group relative flex flex-col product-item" data-category="ayushakti">
-            <div class="relative w-full aspect-[4/5] bg-[#F0EFEC] rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-stone-100">
-                <!-- Badges -->
-                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex gap-1 sm:gap-2">
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Best Seller</span>
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Occasional Use</span>
+                    <div class="flex items-center gap-4">
+                        <!-- Sort Form -->
+                        <form method="GET" action="{{ route('customer.products.list') }}">
+                            @foreach (request()->except('sort_by', 'page') as $key => $value)
+                                @if (is_array($value))
+                                    @foreach ($value as $val)
+                                        <input type="hidden" name="{{ $key }}[]" value="{{ $val }}">
+                                    @endforeach
+                                @else
+                                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                @endif
+                            @endforeach
+
+                            <select name="sort_by" onchange="this.form.submit()"
+                                class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
+                                <option value="newest" {{ ($sortBy ?? 'newest') == 'newest' ? 'selected' : '' }}>Newest
+                                    First</option>
+                                <option value="featured" {{ ($sortBy ?? '') == 'featured' ? 'selected' : '' }}>Featured
+                                </option>
+                                <option value="price_asc" {{ ($sortBy ?? '') == 'price_asc' ? 'selected' : '' }}>Price:
+                                    Low to High</option>
+                                <option value="price_desc" {{ ($sortBy ?? '') == 'price_desc' ? 'selected' : '' }}>Price:
+                                    High to Low</option>
+                                <option value="name_asc" {{ ($sortBy ?? '') == 'name_asc' ? 'selected' : '' }}>Name: A to
+                                    Z</option>
+                                <option value="name_desc" {{ ($sortBy ?? '') == 'name_desc' ? 'selected' : '' }}>Name: Z
+                                    to A</option>
+                                <option value="popular" {{ ($sortBy ?? '') == 'popular' ? 'selected' : '' }}>Most Popular
+                                </option>
+                            </select>
+                        </form>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-700 text-sm">View:</span>
+                            <button id="gridView" class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button id="listView" class="p-2 text-gray-500 hover:text-emerald-700 rounded-lg">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Mobile Cart Icon (Bottom Right) - Hidden on Desktop -->
-                <button class="md:hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-stone-700 border border-stone-200/50 shadow-sm mobile-add-btn"
-                        data-id="7"
-                        data-name="Ayushakti"
-                        data-price="1999"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Ayushakti.jpeg"
-                        data-weight="Vitality Paste">
-                    <i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                </button>
 
-                <a href="{{ route('customer.products.details', ['slug' => 'ayushakti']) }}">
-                    <img 
-                        src="https://www.vedherbsandayurveda.com/products-img/Ayushakti.jpeg"
-                        alt="Performance Pills"
-                        class="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-100 mix-blend-multiply"
-                    />
-                </a>
+                <!-- Products Grid -->
+                @if (count($products ?? []) > 0)
+                    <div id="productsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @foreach ($products as $product)
+                            <div
+                                class="product-card bg-white rounded-xl shadow overflow-hidden group grid-view flex flex-col relative">
+                                <!-- Product Image -->
+                                <div class="product-image-container relative bg-stone-50">
+                                    <a href="{{ route('customer.products.details', $product['slug']) }}">
+                                        <img src="{{ asset('storage/' . $product['main_image']) }}"
+                                            alt="{{ $product['name'] }}" class="product-image"
+                                            onerror="this.src='/images/placeholder-product.jpg'">
+                                    </a>
 
-                <!-- Quick Add Button (Visible on Hover - Hidden on Mobile) -->
-                <button class="hidden md:flex absolute bottom-3 sm:bottom-4 right-3 sm:right-4 left-3 sm:left-4 bg-white/95 backdrop-blur-md text-stone-900 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium shadow-lg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 border border-stone-100 items-center justify-center gap-1 sm:gap-2 hover:bg-stone-50 desktop-add-btn"
-                        data-id="7"
-                        data-name="Ayushakti"
-                        data-price="1999"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Ayushakti.jpeg"
-                        data-weight="Vitality Paste">
-                    <iconify-icon icon="lucide:shopping-bag" width="14" height="14"></iconify-icon>
-                    Add to Cart
-                </button>
-            </div>
+                                    <!-- Badges -->
+                                    <div class="absolute top-3 right-3 space-y-1">
+                                        @if (($product['discount_percent'] ?? 0) > 0)
+                                            <span class="discount-badge">{{ $product['discount_percent'] }}% OFF</span>
+                                        @endif
+                                        @if ($product['is_new'] ?? false)
+                                            <span class="bg-green-600 text-white text-xs px-2 py-1 rounded">NEW</span>
+                                        @endif
+                                        @if ($product['is_featured'] ?? false)
+                                            <span
+                                                class="bg-purple-600 text-white text-xs px-2 py-1 rounded">FEATURED</span>
+                                        @endif
+                                        @if ($product['is_bestseller'] ?? false)
+                                            <span class="bg-red-600 text-white text-xs px-2 py-1 rounded">BESTSELLER</span>
+                                        @endif
+                                    </div>
+                                </div>
 
-            <div class="mt-3 sm:mt-4 flex flex-col gap-1">
-                <a href="{{ route('customer.products.details', ['slug' => 'ayushakti']) }}" class="group-hover:text-sage-800 transition-colors">
-                    <div class="flex justify-between items-start">
-                        <div class="pr-2">
-                            <h3 class="text-sm sm:text-base md:text-lg font-serif font-medium text-stone-900 group-hover:text-sage-800 transition-colors line-clamp-1">
-                                Ayushakti
-                            </h3>
-                            <p class="text-[10px] sm:text-xs font-medium text-stone-400 uppercase tracking-widest mt-0.5 line-clamp-1">Vitality Paste</p>
-                        </div>
-                        <p class="text-base sm:text-lg md:text-xl font-medium text-stone-900 shrink-0">₹1999</p>
+                                <!-- Product Details -->
+                                <div class="p-4 flex flex-col flex-grow relative">
+                                    <a href="{{ route('customer.products.details', $product['slug']) }}" class="block">
+                                        <h3
+                                            class="font-semibold text-gray-800 mb-2 hover:text-emerald-700 transition-colors line-clamp-2 min-h-[3rem]">
+                                            {{ $product['name'] }}
+                                        </h3>
+                                    </a>
+
+                                    <!-- Rating -->
+                                    @if (($product['rating'] ?? 0) > 0)
+                                        <div class="flex items-center gap-1 mb-2">
+                                            @for ($i = 1; $i <= 5; $i++)
+                                                @if ($i <= floor($product['rating']))
+                                                    <i class="fas fa-star text-yellow-400 text-sm"></i>
+                                                @elseif($i == ceil($product['rating']) && $product['rating'] % 1 >= 0.5)
+                                                    <i class="fas fa-star-half-alt text-yellow-400 text-sm"></i>
+                                                @else
+                                                    <i class="far fa-star text-gray-300 text-sm"></i>
+                                                @endif
+                                            @endfor
+                                            <span
+                                                class="text-xs text-gray-500 ml-1">({{ $product['review_count'] ?? 0 }})</span>
+                                        </div>
+                                    @endif
+
+                                    <!-- Price -->
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="text-xl font-bold text-gray-900">
+                                            ₹{{ number_format($product['price'] ?? 0) }}
+                                        </span>
+                                        @if (($product['compare_price'] ?? 0) > ($product['price'] ?? 0))
+                                            <span class="text-sm text-gray-400 line-through">
+                                                ₹{{ number_format($product['compare_price']) }}
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    <div class="action-buttons">
+                                        <button type="button"
+                                            class="btn-add-to-cart add-to-cart-btn"
+                                            data-product-id="{{ $product['id'] }}"
+                                            data-variant-id="{{ $product['default_variant_id'] ?? $product['id'] }}"
+                                            {{ !($product['is_in_stock'] ?? true) ? 'disabled' : '' }}>
+                                            <i class="fas fa-shopping-cart mr-2"></i>
+                                            Add to Cart
+                                        </button>
+                                        <button onclick="addToWishlist({{ $product['id'] }}, {{ $product['default_variant_id'] ?? $product['id'] }})"
+                                            class="btn-wishlist wishlist-btn"
+                                            data-product-id="{{ $product['id'] }}"
+                                            title="Add to Wishlist">
+                                            <i class="fas fa-heart"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
-                </a>
-            </div>
-        </div>
 
-        <!-- Product 8 - Stree Shakti -->
-        <div class="group relative flex flex-col product-item" data-category="stree-shakti">
-            <div class="relative w-full aspect-[4/5] bg-[#F0EFEC] rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-stone-100">
-                <!-- Badges -->
-                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex gap-1 sm:gap-2">
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Best Seller</span>
-                    <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white/90 backdrop-blur-sm rounded text-[9px] sm:text-[10px] font-medium tracking-wide uppercase text-stone-600 border border-stone-200/50">Occasional Use</span>
-                </div>
-                
-                <!-- Mobile Cart Icon (Bottom Right) - Hidden on Desktop -->
-                <button class="md:hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-stone-700 border border-stone-200/50 shadow-sm mobile-add-btn"
-                        data-id="8"
-                        data-name="Stree Shakti"
-                        data-price="1749"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Stree-Shakti.PNG"
-                        data-weight="Premium Chyawanprash Paste">
-                    <i data-lucide="plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                </button>
+                    <!-- Pagination -->
+                    @if (isset($paginator['last_page']) && $paginator['last_page'] > 1)
+                        <div class="mt-12">
+                            <div class="flex justify-center">
+                                <nav class="flex items-center gap-1">
+                                    <!-- Previous Page -->
+                                    @if ($paginator['current_page'] > 1)
+                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $paginator['current_page'] - 1])) }}"
+                                            class="w-10 h-10 flex items-center justify-center rounded-lg text-gray-600 hover:bg-emerald-50 hover:text-emerald-700">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    @endif
 
-                <a href="{{ route('customer.products.details', ['slug' => 'stree-shakti']) }}">
-                    <img 
-                        src="https://www.vedherbsandayurveda.com/products-img/Stree-Shakti.PNG"
-                        alt="Performance Pills"
-                        class="w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105 opacity-100 mix-blend-multiply"
-                    />
-                </a>
+                                    <!-- Page Numbers -->
+                                    @php
+                                        $start = max(1, $paginator['current_page'] - 2);
+                                        $end = min($paginator['last_page'], $paginator['current_page'] + 2);
+                                    @endphp
 
-                <!-- Quick Add Button (Visible on Hover - Hidden on Mobile) -->
-                <button class="hidden md:flex absolute bottom-3 sm:bottom-4 right-3 sm:right-4 left-3 sm:left-4 bg-white/95 backdrop-blur-md text-stone-900 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium shadow-lg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 border border-stone-100 items-center justify-center gap-1 sm:gap-2 hover:bg-stone-50 desktop-add-btn"
-                        data-id="8"
-                        data-name="Stree Shakti"
-                        data-price="1749"
-                        data-image="https://www.vedherbsandayurveda.com/products-img/Stree-Shakti.PNG"
-                        data-weight="Premium Chyawanprash Paste">
-                    <iconify-icon icon="lucide:shopping-bag" width="14" height="14"></iconify-icon>
-                    Add to Cart
-                </button>
-            </div>
+                                    @for ($i = $start; $i <= $end; $i++)
+                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $i])) }}"
+                                            class="w-10 h-10 flex items-center justify-center rounded-lg
+                                                {{ $i == $paginator['current_page'] ? 'bg-emerald-600 text-white' : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-700' }}">
+                                            {{ $i }}
+                                        </a>
+                                    @endfor
 
-            <div class="mt-3 sm:mt-4 flex flex-col gap-1">
-                <a href="{{ route('customer.products.details', ['slug' => 'stree-shakti']) }}" class="group-hover:text-sage-800 transition-colors">
-                    <div class="flex justify-between items-start">
-                        <div class="pr-2">
-                            <h3 class="text-sm sm:text-base md:text-lg font-serif font-medium text-stone-900 group-hover:text-sage-800 transition-colors line-clamp-1">
-                                Stree Shakti
-                            </h3>
-                            <p class="text-[10px] sm:text-xs font-medium text-stone-400 uppercase tracking-widest mt-0.5 line-clamp-1">Premium Chyawanprash Paste</p>
+                                    <!-- Next Page -->
+                                    @if ($paginator['current_page'] < $paginator['last_page'])
+                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $paginator['current_page'] + 1])) }}"
+                                            class="w-10 h-10 flex items-center justify-center rounded-lg text-gray-600 hover:bg-emerald-50 hover:text-emerald-700">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    @endif
+                                </nav>
+                            </div>
                         </div>
-                        <p class="text-base sm:text-lg md:text-xl font-medium text-stone-900 shrink-0">₹1749</p>
+                    @endif
+                @else
+                    <!-- No Products Found -->
+                    <div class="text-center py-16 bg-white rounded-xl shadow">
+                        <i class="fas fa-search text-gray-300 text-5xl mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Products Found</h3>
+                        <p class="text-gray-600 mb-6">Try adjusting your filters or search terms</p>
+                        <a href="{{ route('customer.products.list') }}"
+                            class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                            Reset All Filters
+                        </a>
                     </div>
-                </a>
+                @endif
             </div>
         </div>
     </div>
-</div>
 @endsection
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Get all filter buttons and product items
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    const productItems = document.querySelectorAll('.product-item');
-    const productGrid = document.getElementById('product-grid');
-    const mobileFilter = document.getElementById('mobile-filter');
-    
-    // Count products per category
-    const categoryCounts = {};
-    
-    // Initialize counts
-    filterButtons.forEach(button => {
-        const filter = button.getAttribute('data-filter');
-        categoryCounts[filter] = 0;
-    });
-    
-    // Count products in each category
-    productItems.forEach(item => {
-        const category = item.getAttribute('data-category');
-        if (categoryCounts[category] !== undefined) {
-            categoryCounts[category]++;
+    <!-- Include Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- CSRF Token setup -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <script>
+        // CSRF Token setup for Axios
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Configure Axios for API calls
+        axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
+        axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+        axios.defaults.headers.common['Accept'] = 'application/json';
+
+        // Wishlist functionality
+        async function addToWishlist(productId, variantId = null) {
+            const variantIdToUse = variantId || productId;
+
+            try {
+                const response = await axios.post('{{ route("customer.wishlist.add") }}', {
+                    product_variant_id: variantIdToUse
+                });
+
+                if (response.data.success) {
+                    const heartIcon = document.querySelector(`[data-product-id="${productId}"] i`);
+                    if (heartIcon) {
+                        heartIcon.className = 'fas fa-heart text-red-500';
+                    }
+                    showToast('Product added to wishlist!', 'success');
+                    if (typeof updateWishlistCount === 'function') {
+                        updateWishlistCount(data.count);
+                    }
+                }
+            } catch (error) {
+                console.error('Wishlist Error:', error);
+                const message = error.response?.data?.message || 'Failed to add product to wishlist.';
+                showToast(message, error.response?.status === 400 ? 'success' : 'error'); // If already exists, treat as success/info
+            }
         }
-    });
-    
-    // Update count displays on buttons
-    filterButtons.forEach(button => {
-        const filter = button.getAttribute('data-filter');
-        const countElement = document.getElementById(`${filter}-count`);
-        
-        if (countElement && filter !== 'all') {
-            const count = categoryCounts[filter] || 0;
-            countElement.textContent = `(${count})`;
-        }
-    });
-    
-    // Update "All" count
-    const allCountElement = document.getElementById('all-count');
-    if (allCountElement) {
-        allCountElement.textContent = `(${productItems.length})`;
-    }
-    
-    // Filter products function
-    function filterProducts(filter) {
-        // Remove active class from all buttons
-        filterButtons.forEach(btn => {
-            btn.classList.remove('bg-stone-900', 'text-white', 'hover:bg-stone-800');
-            btn.classList.add('bg-white', 'border', 'border-stone-200', 'text-stone-600', 'hover:border-stone-300', 'hover:text-stone-900');
-        });
-        
-        // Add active class to clicked button
-        const activeButton = document.querySelector(`.filter-btn[data-filter="${filter}"]`);
-        if (activeButton) {
-            activeButton.classList.remove('bg-white', 'border', 'border-stone-200', 'text-stone-600', 'hover:border-stone-300', 'hover:text-stone-900');
-            activeButton.classList.add('bg-stone-900', 'text-white', 'hover:bg-stone-800');
-        }
-        
-        // Update mobile filter dropdown
-        if (mobileFilter) {
-            mobileFilter.value = filter;
-        }
-        
-        // Show/hide products based on filter
-        productItems.forEach(item => {
-            const category = item.getAttribute('data-category');
-            
-            if (filter === 'all' || category === filter) {
-                item.style.display = 'flex';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // View mode toggle
+            document.getElementById('gridView')?.addEventListener('click', function() {
+                setViewMode('grid');
+                this.classList.add('bg-emerald-100', 'text-emerald-700');
+                this.classList.remove('text-gray-500');
+                document.getElementById('listView').classList.remove('bg-emerald-100', 'text-emerald-700');
+                document.getElementById('listView').classList.add('text-gray-500');
+            });
+
+            document.getElementById('listView')?.addEventListener('click', function() {
+                setViewMode('list');
+                this.classList.add('bg-emerald-100', 'text-emerald-700');
+                this.classList.remove('text-gray-500');
+                document.getElementById('gridView').classList.remove('bg-emerald-100', 'text-emerald-700');
+                document.getElementById('gridView').classList.add('text-gray-500');
+            });
+
+            // Add to cart functionality
+            document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const productId = this.getAttribute('data-product-id');
+                    const variantId = this.getAttribute('data-variant-id') || productId;
+                    const btn = this;
+                    const originalText = btn.innerHTML;
+
+                    if (btn.disabled) return;
+
+                    // Show loading state
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Adding...';
+                    btn.disabled = true;
+
+                    try {
+                        const response = await axios.post('/cart/add', {
+                            variant_id: variantId,
+                            quantity: 1
+                        });
+
+                        if (response.data.success) {
+                            showToast('Product added to cart successfully!', 'success');
+                            updateCartCount(response.data.cart_count || 0);
+                        } else {
+                            showToast(response.data.message || 'Failed to add to cart', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Add to cart error:', error);
+                        showToast('An error occurred. Please try again.', 'error');
+                    } finally {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                });
+            });
+
+            // Price form validation
+            document.getElementById('priceForm')?.addEventListener('submit', function(e) {
+                const minPrice = this.querySelector('input[name="min_price"]').value;
+                const maxPrice = this.querySelector('input[name="max_price"]').value;
+
+                if (minPrice && maxPrice && parseInt(minPrice) > parseInt(maxPrice)) {
+                    e.preventDefault();
+                    showToast('Minimum price cannot be greater than maximum price', 'error');
+                }
+            });
+
+            // Set default view mode
+            const savedViewMode = localStorage.getItem('productViewMode') || 'grid';
+            if (savedViewMode === 'list') {
+                document.getElementById('listView')?.click();
             } else {
-                item.style.display = 'none';
+                document.getElementById('gridView')?.click();
             }
         });
-        
-        // Smooth animation for grid rearrangement
-        setTimeout(() => {
-            productGrid.classList.add('transition-all', 'duration-300');
-        }, 10);
-    }
-    
-    // Add click event listeners to filter buttons
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const filter = this.getAttribute('data-filter');
-            filterProducts(filter);
-        });
-    });
-    
-    // Mobile filter dropdown event listener
-    if (mobileFilter) {
-        mobileFilter.addEventListener('change', function() {
-            const filter = this.value;
-            filterProducts(filter);
-        });
-    }
-    
-    // Initialize with "All" filter active
-    filterProducts('all');
-});
-</script>
+
+        // Set view mode
+        function setViewMode(mode) {
+            const productsContainer = document.getElementById('productsContainer');
+            if (!productsContainer) return;
+
+            if (mode === 'grid') {
+                productsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
+            } else {
+                productsContainer.className = 'grid grid-cols-1 gap-6';
+            }
+
+            productsContainer.querySelectorAll('.product-card').forEach(card => {
+                if (mode === 'grid') {
+                    card.classList.remove('list-view');
+                    card.classList.add('grid-view', 'flex-col');
+                    const imageContainer = card.querySelector('.product-image-container');
+                    if (imageContainer) {
+                        imageContainer.classList.remove('w-64', 'h-64', 'flex-shrink-0');
+                        imageContainer.classList.add('aspect-[4/5]');
+                    }
+                } else {
+                    card.classList.remove('grid-view', 'flex-col');
+                    card.classList.add('list-view', 'flex-row');
+                    const imageContainer = card.querySelector('.product-image-container');
+                    if (imageContainer) {
+                        imageContainer.classList.remove('aspect-[4/5]');
+                        imageContainer.classList.add('w-64', 'h-64', 'flex-shrink-0');
+                    }
+                }
+            });
+
+            localStorage.setItem('productViewMode', mode);
+        }
+
+        // Update cart count
+        function updateCartCount(count) {
+            const cartCountElements = document.querySelectorAll('.cart-count');
+            cartCountElements.forEach(element => {
+                element.textContent = count;
+                element.style.display = count > 0 ? 'flex' : 'none';
+            });
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            document.querySelectorAll('.custom-toast').forEach(toast => toast.remove());
+
+            const toast = document.createElement('div');
+            toast.className = `custom-toast fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 ${
+                type === 'success'
+                    ? 'bg-green-100 text-green-800 border border-green-200'
+                    : 'bg-red-100 text-red-800 border border-red-200'
+            }`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <iconify-icon icon="${type === 'success' ? 'lucide:check-circle' : 'lucide:alert-circle'}" width="20" class="mr-2"></iconify-icon>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateY(0)';
+            }, 10);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
 @endpush

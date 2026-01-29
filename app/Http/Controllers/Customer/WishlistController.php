@@ -37,7 +37,7 @@ class WishlistController extends Controller
         $wishlistCount = $wishlist->items()->count();
 
         // Get total estimated price
-        $totalPrice = $wishlistItems->sum(function($item) {
+        $totalPrice = $wishlistItems->sum(function ($item) {
             return $item->variant->price ?? $item->variant->product->price ?? 0;
         });
 
@@ -106,7 +106,7 @@ class WishlistController extends Controller
 
         // Find the wishlist item
         $wishlistItem = WishlistItem::where('id', $request->item_id)
-            ->whereHas('wishlist', function($query) use ($customer) {
+            ->whereHas('wishlist', function ($query) use ($customer) {
                 $query->where('customer_id', $customer->id);
             })
             ->first();
@@ -141,7 +141,7 @@ class WishlistController extends Controller
 
         // Delete multiple items
         $deleted = WishlistItem::whereIn('id', $request->item_ids)
-            ->whereHas('wishlist', function($query) use ($customer) {
+            ->whereHas('wishlist', function ($query) use ($customer) {
                 $query->where('customer_id', $customer->id);
             })
             ->delete();
@@ -167,7 +167,7 @@ class WishlistController extends Controller
 
         // Find the wishlist item with variant details
         $wishlistItem = WishlistItem::where('id', $request->item_id)
-            ->whereHas('wishlist', function($query) use ($customer) {
+            ->whereHas('wishlist', function ($query) use ($customer) {
                 $query->where('customer_id', $customer->id);
             })
             ->with('variant')
@@ -180,14 +180,10 @@ class WishlistController extends Controller
             ], 404);
         }
 
-        // Add to cart (implement your cart logic here)
+        // Add to cart using CartHelper
         try {
-            // Example cart addition logic - replace with your actual cart implementation
-            // $cartItem = \App\Models\Cart::add([
-            //     'customer_id' => $customer->id,
-            //     'product_variant_id' => $wishlistItem->product_variant_id,
-            //     'quantity' => 1,
-            // ]);
+            $cartHelper = app(\App\Helpers\CartHelper::class);
+            $cartHelper->addToCart($wishlistItem->product_variant_id, 1);
 
             // Remove from wishlist after adding to cart
             $wishlistItem->delete();
@@ -226,16 +222,12 @@ class WishlistController extends Controller
 
         $movedCount = 0;
         $errors = [];
+        $cartHelper = app(\App\Helpers\CartHelper::class);
 
         // Add all items to cart
         foreach ($items as $item) {
             try {
-                // Add to cart logic here - replace with your actual cart implementation
-                // \App\Models\Cart::add([
-                //     'customer_id' => $customer->id,
-                //     'product_variant_id' => $item->product_variant_id,
-                //     'quantity' => 1,
-                // ]);
+                $cartHelper->addToCart($item->product_variant_id, 1);
 
                 // Remove from wishlist
                 $item->delete();
@@ -429,7 +421,7 @@ class WishlistController extends Controller
         }
 
         $wishlistCount = $wishlist->items()->count();
-        $totalPrice = $wishlist->items->sum(function($item) {
+        $totalPrice = $wishlist->items->sum(function ($item) {
             return $item->variant->price ?? $item->variant->product->price ?? 0;
         });
 
@@ -461,12 +453,15 @@ class WishlistController extends Controller
         }
 
         $items = $wishlist->items()
-            ->with(['variant.product' => function($query) {
-                $query->select('id', 'name', 'slug');
-            }, 'variant.images'])
+            ->with([
+                'variant.product' => function ($query) {
+                    $query->select('id', 'name', 'slug');
+                },
+                'variant.images'
+            ])
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'variant_id' => $item->product_variant_id,

@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderConfirmation;
 
 class CheckoutController extends Controller
 {
@@ -69,6 +71,13 @@ class CheckoutController extends Controller
 
         if (!empty($result['order'])) {
             $this->shiprocketService->createOrder($result['order']);
+
+            // Send Confirmation Email
+            try {
+                Mail::to($result['order']->shipping_address['email'])->send(new OrderConfirmation($result['order']));
+            } catch (\Exception $e) {
+                Log::error('Failed to send COD order confirmation email: ' . $e->getMessage());
+            }
         }
 
         return redirect()
@@ -144,6 +153,13 @@ class CheckoutController extends Controller
             $this->razorpayService->processPayment($order, $request->all());
             $this->shiprocketService->createOrder($order);
 
+            // Send Confirmation Email
+            try {
+                Mail::to($order->shipping_address['email'])->send(new OrderConfirmation($order));
+            } catch (\Exception $e) {
+                Log::error('Failed to send online order confirmation email: ' . $e->getMessage());
+            }
+
 
             session()->forget([
                 'checkout_data',
@@ -203,7 +219,7 @@ class CheckoutController extends Controller
         $length = 10;
         $width = 10;
         $height = 10;
-        
+
         // Simple bounding box logic: max dimensions
         // A more complex logic would be volume based or 3D packing, but max of each dim 
         // ensures the box is at least big enough for the largest item.
@@ -219,22 +235,25 @@ class CheckoutController extends Controller
         $maxHeight = 10;
 
         foreach ($cart['items'] as $item) {
-             $variant = ProductVariant::where('sku', $item['sku'])->first();
-             // Fallback to product if variant dims are null (which shouldn't be due to default, but safety)
-             // Prioritize variant > product > default 10
-             
-             $l = $variant->length ?? ($item->product->length ?? 10);
-             $w = $variant->width ?? ($item->product->width ?? 10);
-             $h = $variant->height ?? ($item->product->height ?? 10);
-             
-             if ($l > $maxLength) $maxLength = $l;
-             if ($w > $maxWidth) $maxWidth = $w;
-             // Height might be additive if stacked? 
-             // For now let's just take max height too to keep shipping cost low/reasonable 
-             // unless we want to sum heights. 
-             // User requested "cheap price", so max dims is better than sum dims 
-             // (which implies stacking everything vertically).
-             if ($h > $maxHeight) $maxHeight = $h;
+            $variant = ProductVariant::where('sku', $item['sku'])->first();
+            // Fallback to product if variant dims are null (which shouldn't be due to default, but safety)
+            // Prioritize variant > product > default 10
+
+            $l = $variant->length ?? ($item->product->length ?? 10);
+            $w = $variant->width ?? ($item->product->width ?? 10);
+            $h = $variant->height ?? ($item->product->height ?? 10);
+
+            if ($l > $maxLength)
+                $maxLength = $l;
+            if ($w > $maxWidth)
+                $maxWidth = $w;
+            // Height might be additive if stacked? 
+            // For now let's just take max height too to keep shipping cost low/reasonable 
+            // unless we want to sum heights. 
+            // User requested "cheap price", so max dims is better than sum dims 
+            // (which implies stacking everything vertically).
+            if ($h > $maxHeight)
+                $maxHeight = $h;
         }
 
         return [
