@@ -69,20 +69,20 @@
                 <!-- Login Form -->
                 <form id="login-form" class="space-y-6" method="POST" action="{{ route('customer.login.submit') }}">
                     @csrf
-                    <!-- Email -->
+                    <!-- Mobile Number -->
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-2">
-                            Email Address <span class="text-red-500">*</span>
+                            Mobile Number <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <iconify-icon icon="lucide:mail" width="18"
+                            <iconify-icon icon="lucide:phone" width="18"
                                 class="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400">
                             </iconify-icon>
-                            <input type="email" name="email" value="{{ old('email') }}" required autocomplete="email"
+                            <input type="tel" name="mobile" value="{{ old('mobile') }}" required autocomplete="tel"
                                 autofocus
-                                class="w-full bg-stone-50 border border-stone-300 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 @error('email') border-red-500 @enderror"
-                                placeholder="Enter your email">
-                            @error('email')
+                                class="w-full bg-stone-50 border border-stone-300 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 @error('mobile') border-red-500 @enderror"
+                                placeholder="Enter your mobile number">
+                            @error('mobile')
                                 <span class="error-message text-red-500 text-xs mt-1 block">{{ $message }}</span>
                             @enderror
                         </div>
@@ -249,9 +249,9 @@
                 if (loginBtn) {
                     loginBtn.disabled = true;
                     loginBtn.innerHTML = `
-                    <iconify-icon icon="lucide:loader-2" width="18" class="animate-spin"></iconify-icon>
-                    Signing In...
-                `;
+                        <iconify-icon icon="lucide:loader-2" width="18" class="animate-spin"></iconify-icon>
+                        Signing In...
+                    `;
                 }
             });
 
@@ -338,6 +338,6 @@
                     });
                 @endforeach
             @endif
-    });
+        });
     </script>
 @endpush

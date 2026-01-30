@@ -395,18 +395,19 @@
                 <!-- Thumbnail Gallery (Dynamic) -->
                 <div class="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3" id="thumbnail-gallery">
                     @php
-                        $images = $product['product_images'] ?? [];
+                        $images = $product['images'] ?? [];
                         if (empty($images) && isset($product['main_image'])) {
-                            $images = [['image' => $product['main_image'], 'alt' => $product['name']]];
+                            $images = [['url' => $product['main_image'], 'alt' => $product['name']]];
                         }
                     @endphp
                     @foreach ($images as $index => $img)
                         <button
                             class="thumbnail-btn aspect-square rounded-lg border {{ $index === 0 ? 'border-2 border-emerald-500' : 'border-stone-300' }} overflow-hidden hover:border-emerald-500 transition-all"
-                            data-image-index="{{ $index }}" data-image-src="{{ asset('storage/' . ($img['image'] ?? $img)) }}"
+                            data-image-index="{{ $index }}"
+                            data-image-src="{{ asset('storage/' . ($img['url'] ?? $img['image'] ?? $img)) }}"
                             data-image-alt="{{ $product['name'] }} - View {{ $index + 1 }}">
-                            <img src="{{ asset('storage/' . ($img['image'] ?? $img)) }}" alt="{{ $product['name'] }}"
-                                class="w-full h-full object-cover" loading="lazy">
+                            <img src="{{ asset('storage/' . ($img['url'] ?? $img['image'] ?? $img)) }}"
+                                alt="{{ $product['name'] }}" class="w-full h-full object-cover" loading="lazy">
                         </button>
                     @endforeach
                 </div>
@@ -1192,7 +1193,20 @@
             }
 
             // Update image if variant has one
-            if (variant.main_image) {
+            if (variant.images && variant.images.length > 0) {
+                // Find primary image or use first one
+                const primaryImg = variant.images.find(img => img.is_primary) || variant.images[0];
+
+                if (primaryImg) {
+                    const mainImg = document.getElementById('main-product-image');
+                    if (mainImg) {
+                        mainImg.src = `{{ asset('storage/') }}/${primaryImg.url}`;
+                    }
+
+                    // Also filter gallery to show only variant images? 
+                    // For now, let's keep all images but ensure the main image updates.
+                }
+            } else if (variant.main_image) {
                 const mainImg = document.getElementById('main-product-image');
                 if (mainImg) {
                     mainImg.src = `{{ asset('storage/') }}/${variant.main_image}`;
@@ -1378,15 +1392,15 @@
             const icon = type === 'success' ? 'lucide:check-circle' : (type === 'error' ? 'lucide:alert-circle' : 'lucide:info');
 
             toast.innerHTML = `
-                            <iconify-icon icon="${icon}" width="20"></iconify-icon>
-                            <div class="flex-1">
-                                <p class="font-bold text-sm">${title}</p>
-                                <p class="text-xs opacity-90">${message}</p>
-                            </div>
-                            <button class="opacity-70 hover:opacity-100" onclick="this.parentElement.remove()">
-                                <iconify-icon icon="lucide:x" width="16"></iconify-icon>
-                            </button>
-                        `;
+                                    <iconify-icon icon="${icon}" width="20"></iconify-icon>
+                                    <div class="flex-1">
+                                        <p class="font-bold text-sm">${title}</p>
+                                        <p class="text-xs opacity-90">${message}</p>
+                                    </div>
+                                    <button class="opacity-70 hover:opacity-100" onclick="this.parentElement.remove()">
+                                        <iconify-icon icon="lucide:x" width="16"></iconify-icon>
+                                    </button>
+                                `;
 
             container.appendChild(toast);
 

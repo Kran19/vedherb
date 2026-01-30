@@ -273,7 +273,11 @@ class CheckoutController extends Controller
             $weight += $itemWeight * $item['quantity'];
         }
 
-        return max($weight, 0.1);
+        // Convert Grams to KG (Shiprocket expects KG)
+        // Assuming DB stores grams since we see values like 3480
+        $weightInKg = $weight / 1000;
+
+        return max($weightInKg, 0.1); // Minimum 0.1 KG
     }
 
     private function validateCheckout(Request $request): void

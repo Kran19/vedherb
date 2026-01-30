@@ -14,16 +14,19 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Services\SmsService;
 
 class CheckoutService
 {
     protected CartHelper $cartHelper;
+    protected SmsService $smsService;
     protected $cart;
     protected $customer;
 
-    public function __construct(CartHelper $cartHelper)
+    public function __construct(CartHelper $cartHelper, SmsService $smsService)
     {
         $this->cartHelper = $cartHelper;
+        $this->smsService = $smsService;
         $this->cart = $cartHelper->getCart();
         $this->customer = Auth::guard('customer')->user();
     }
@@ -62,6 +65,16 @@ class CheckoutService
                 'order_number' => $order->order_number,
                 'grand_total' => $order->grand_total
             ]);
+
+            // Send Order Placed SMS
+            if ($this->customer && $this->customer->mobile) {
+                $this->smsService->sendOrderPlaced(
+                    $this->customer->mobile,
+                    $this->customer->name,
+                    $order->order_number,
+                    $order->grand_total
+                );
+            }
 
             return [
                 'order' => $order,

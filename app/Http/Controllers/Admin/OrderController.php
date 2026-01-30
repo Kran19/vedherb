@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\SmsService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,13 @@ use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
+    protected SmsService $smsService;
+
+    public function __construct(SmsService $smsService)
+    {
+        $this->smsService = $smsService;
+    }
+
     /**
      * Display listing page
      */
@@ -153,6 +161,16 @@ class OrderController extends Controller
 
             DB::commit();
 
+            // Send SMS notifications based on status
+            if ($order->customer && $order->customer->mobile) {
+                if ($validated['status'] === 'cancelled') {
+                    $this->smsService->sendOrderCancelled(
+                        $order->customer->mobile,
+                        $order->order_number
+                    );
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order status updated successfully!',
@@ -190,6 +208,15 @@ class OrderController extends Controller
             $order->save();
 
             DB::commit();
+
+            // Send SMS for refund initiated
+            if ($validated['payment_status'] === 'refunded' && $order->customer && $order->customer->mobile) {
+                $this->smsService->sendRefundInitiated(
+                    $order->customer->mobile,
+                    $order->grand_total,
+                    $order->order_number
+                );
+            }
 
             return response()->json([
                 'success' => true,
@@ -399,6 +426,17 @@ class OrderController extends Controller
             }
 
             DB::commit();
+
+            // Send order dispatched SMS
+            if ($order->customer && $order->customer->mobile) {
+                $this->smsService->sendOrderDispatched(
+                    $order->customer->mobile,
+                    $order->customer->name,
+                    $order->order_number,
+                    $validated['tracking_number'],
+                    $validated['carrier'] ?? 'Standard'
+                );
+            }
 
             return response()->json([
                 'success' => true,

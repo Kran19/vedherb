@@ -8,15 +8,18 @@ use App\Models\Payment;
 use App\Models\PaymentAttempt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Services\SmsService;
 
 class RazorpayService
 {
     protected $razorpay;
     protected $keyId;
     protected $keySecret;
+    protected $smsService;
 
-    public function __construct()
+    public function __construct(SmsService $smsService)
     {
+        $this->smsService = $smsService;
         $this->keyId = config('services.razorpay.key_id');
         $this->keySecret = config('services.razorpay.key_secret');
 
@@ -145,13 +148,29 @@ class RazorpayService
                 'order_id' => $orderId
             ]);
 
-            $attributes = [
-                'razorpay_order_id' => $orderId,
-                'razorpay_payment_id' => $paymentId,
-                'razorpay_signature' => $signature
-            ];
+            try {
+                $attributes = [
+                    'razorpay_order_id' => $orderId,
+                    'razorpay_payment_id' => $paymentId,
+                    'razorpay_signature' => $signature
+                ];
 
-            $this->razorpay->utility->verifyPaymentSignature($attributes);
+                $this->razorpay->utility->verifyPaymentSignature($attributes);
+            } catch (\Exception $e) {
+                // Signature verification failed
+                Log::error('Razorpay Signature Verification Failed: ' . $e->getMessage());
+
+                // Get order to send SMS
+                $paymentAttempt = PaymentAttempt::where('gateway_order_id', $orderId)->first();
+                if ($paymentAttempt) {
+                    $order = Order::find($paymentAttempt->order_id);
+                    if ($order && $order->customer && $order->customer->mobile) {
+                        $this->smsService->sendPaymentFailed($order->customer->mobile, $order->order_number);
+                    }
+                }
+
+                throw $e;
+            }
 
             // Get payment details from Razorpay
             $payment = $this->razorpay->payment->fetch($paymentId);
@@ -232,6 +251,13 @@ class RazorpayService
                     'response_data' => $razorpayPayment->toArray(),
                     'updated_at' => now()
                 ]);
+
+            if ($razorpayPayment->status !== 'captured') {
+                // Payment failed or not captured
+                if ($order->customer && $order->customer->mobile) {
+                    $this->smsService->sendPaymentFailed($order->customer->mobile, $order->order_number);
+                }
+            }
 
             // Update order payment status
             $order->update([

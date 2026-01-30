@@ -226,6 +226,17 @@ class ProductService
                     // Handle variant images
                     $this->syncVariantImages($variant, $variantData);
 
+                } catch (\Illuminate\Database\QueryException $e) {
+                    if ($e->errorInfo[1] == 1062) { // Duplicate entry
+                        Log::error('Duplicate variant detected', ['data' => $variantData]);
+                        throw new \Exception("Duplicate variant detected: SKU '{$variantData['sku']}' or this attribute combination already exists.");
+                    }
+                    Log::error('Database error creating variant', [
+                        'index' => $index,
+                        'error' => $e->getMessage(),
+                        'variant_data' => $variantData
+                    ]);
+                    throw new \Exception("Database error: " . $e->getMessage());
                 } catch (\Exception $e) {
                     Log::error('Failed to create variant', [
                         'index' => $index,
@@ -296,6 +307,23 @@ class ProductService
                 'message' => 'Product updated successfully'
             ];
 
+        } catch (\Illuminate\Database\QueryException $e) {
+            DB::rollBack();
+            $message = $e->getMessage();
+            if ($e->errorInfo[1] == 1062) { // Duplicate entry
+                $message = "A product or variant with this SKU or attribute combination already exists.";
+            }
+
+            Log::error('Product update failed (DB)', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+                'data' => $data
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $message
+            ];
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Product update failed', [
@@ -307,7 +335,7 @@ class ProductService
 
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => "An unexpected error occurred: " . $e->getMessage()
             ];
         }
     }
@@ -349,9 +377,9 @@ class ProductService
             'variants' => function ($query) {
                 $query->with([
                     'attributes' => function ($q) {
-    $q->with(['attribute:id,name']);
-},
-                   'images:id,path,full_url,thumb_url'
+                        $q->with(['attribute:id,name']);
+                    },
+                    'images:id,path,full_url,thumb_url'
 
                 ])->orderBy('is_default', 'desc');
             }
@@ -461,7 +489,7 @@ class ProductService
                     return [
                         'id' => $image->id,
                         'media_id' => $image->media_id,
-'url' => $image->full_url ?? $image->path,
+                        'url' => $image->full_url ?? $image->path,
                         'is_primary' => (bool) $image->is_primary,
                     ];
                 })->toArray(),
@@ -488,7 +516,7 @@ class ProductService
                 return [
                     'id' => $image->id,
                     'media_id' => $image->media_id,
-'url' => $image->full_url ?? $image->path,
+                    'url' => $image->full_url ?? $image->path,
                     'is_primary' => (bool) $image->is_primary,
                 ];
             })->toArray(),
@@ -504,16 +532,16 @@ class ProductService
         if (!$defaultVariant) {
             return null;
         }
-$mainImage = $defaultVariant->images()
-    ->where('variant_images.is_primary', true)
-    ->first();
+        $mainImage = $defaultVariant->images()
+            ->where('variant_images.is_primary', true)
+            ->first();
 
-if ($mainImage) {
-    return [
-        'id' => $mainImage->id,
-        'url' => $mainImage->full_url ?? $mainImage->path,
-    ];
-}
+        if ($mainImage) {
+            return [
+                'id' => $mainImage->id,
+                'url' => $mainImage->full_url ?? $mainImage->path,
+            ];
+        }
 
 
         return null;
@@ -531,12 +559,12 @@ if ($mainImage) {
 
         $galleryImages = $defaultVariant->images()->where('is_primary', false)->get();
 
-       return $galleryImages->map(function ($image) {
-    return [
-        'id' => $image->id,
-        'url' => $image->full_url ?? $image->path,
-    ];
-})->values()->toArray();
+        return $galleryImages->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'url' => $image->full_url ?? $image->path,
+            ];
+        })->values()->toArray();
 
     }
 
@@ -914,7 +942,7 @@ if ($mainImage) {
         if ($product->product_type === 'simple') {
             Log::info('Updating simple product variant', ['product_id' => $product->id]);
             $variant = $product->defaultVariant;
-            
+
             if (!$variant) {
                 Log::warning('No default variant found for simple product, creating one', ['product_id' => $product->id]);
                 $this->createSimpleProductVariant($product, $data);
@@ -988,7 +1016,7 @@ if ($mainImage) {
                 ]);
                 $submittedVariantIds[] = $variant->id;
                 Log::debug('New variant created during update', ['variant_id' => $variant->id, 'sku' => $variant->sku]);
-                
+
                 if (isset($variantData['attributes'])) {
                     $this->syncVariantAttributes($variant, $variantData);
                 }

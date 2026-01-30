@@ -272,7 +272,7 @@
                                 <a href="{{ route('customer.cart') }}" class="px-8 py-4 border border-stone-300 text-stone-700 rounded-full font-bold hover:bg-stone-50 transition-all text-center">
                                     <i class="fas fa-arrow-left mr-2"></i>Back to Cart
                                 </a>
-                                <button type="submit" id="placeOrderBtn" class="flex-1 bg-stone-800 text-white py-4 rounded-full font-bold text-lg shadow-lg hover:bg-stone-900 transform hover:-translate-y-1 transition-all duration-300">
+                                <button type="submit" id="placeOrderBtn" disabled class="flex-1 bg-stone-800 text-white py-4 rounded-full font-bold text-lg shadow-lg opacity-50 cursor-not-allowed transition-all duration-300 transform-none">
                                     <i class="fas fa-lock mr-2"></i>
                                     <span id="orderBtnText">Place Order & Pay ₹{{ number_format($cart['grand_total'], 2) }}</span>
                                 </button>
@@ -384,11 +384,60 @@
         const checkoutForm = document.getElementById('checkoutForm');
         let shippingTimeout = null;
 
+        // --- Form Validation Logic ---
+        function validateForm() {
+            if (!checkoutForm) return;
+            const requiredInputs = checkoutForm.querySelectorAll('input[required], select[required]');
+            let allFilled = true;
+            
+            requiredInputs.forEach(input => {
+                if (input.type === 'checkbox') {
+                    if (!input.checked) allFilled = false;
+                } else {
+                    if (!input.value.trim()) allFilled = false;
+                }
+            });
+
+            const deliveryStatus = document.getElementById('delivery-status');
+            const isDeliveryAvailable = deliveryStatus && !deliveryStatus.classList.contains('hidden') && 
+                                      deliveryStatus.classList.contains('text-green-600');
+
+            const btn = document.getElementById('placeOrderBtn');
+            if (!btn) return;
+
+            if (allFilled && isDeliveryAvailable) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', 'transform-none');
+                btn.classList.add('hover:bg-stone-900', 'transform', 'hover:-translate-y-1');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'transform-none');
+                btn.classList.remove('hover:bg-stone-900', 'transform', 'hover:-translate-y-1');
+            }
+        }
+
+        // Add listeners to all inputs
+        if (checkoutForm) {
+            checkoutForm.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('input', validateForm);
+                input.addEventListener('change', validateForm);
+            });
+            // Initial validation
+            validateForm();
+        }
+
         // --- Pincode & Shipping Logic ---
         if (pincodeInput) {
             pincodeInput.addEventListener('input', function() {
                 clearTimeout(shippingTimeout);
                 const pincode = this.value;
+                
+                // Reset delivery status on change before re-check
+                const deliveryStatus = document.getElementById('delivery-status');
+                deliveryStatus.classList.add('hidden');
+                deliveryStatus.classList.remove('text-green-600');
+                validateForm();
+
                 if (pincode.length === 6) {
                     shippingTimeout = setTimeout(() => checkShipping(pincode), 500);
                 }
@@ -439,6 +488,8 @@
                 deliveryStatus.classList.remove('hidden');
                 
                 container.innerHTML = '<div class="p-4 text-red-500 text-sm">Error checking serviceability. Please try again.</div>';
+            } finally {
+                validateForm(); // Re-validate after shipping check
             }
         }
 

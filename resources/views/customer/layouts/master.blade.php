@@ -7,10 +7,13 @@
     <title>@yield('title', 'Ved Herbs & Ayurveda')</title>
 
     <!-- Preconnect to CDNs -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <!-- Preconnect to CDNs -->
     <link rel="preconnect" href="https://code.iconify.design">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Vite Assets -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Critical CSS -->
     <style>
@@ -449,9 +452,6 @@
         }
     </style>
 
-    <!-- Load Tailwind with defer -->
-    <script src="https://cdn.tailwindcss.com" defer></script>
-
     <!-- Load Google Fonts -->
     <link rel="preload" as="style"
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap">
@@ -497,12 +497,12 @@
 
 
     <!-- Cart Toast Notification -->
-    <div id="cart-toast" class="cart-toast">
+    <!-- <div id="cart-toast" class="cart-toast">
         <div class="check-icon">
             <i data-lucide="check" class="w-3 h-3"></i>
         </div>
         <span id="toast-message">Product added to cart!</span>
-    </div>
+    </div> -->
 
     <!-- Scripts -->
     @include('customer.partials.scripts')

@@ -143,8 +143,11 @@
             border-color: #059669;
         }
 
-        /* Grid view button positioning */
-        .grid-view .action-buttons {
+        /* Grid view button positioning (Default) */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
             position: absolute;
             bottom: 1rem;
             left: 1rem;
@@ -152,14 +155,46 @@
             opacity: 1;
         }
 
-        .grid-view .btn-add-to-cart {
+        .btn-add-to-cart {
             padding: 0.625rem 1rem;
             font-size: 0.875rem;
         }
 
-        /* List view button positioning */
-        .list-view .action-buttons {
-            margin-top: auto;
+        /* Mobile Filter Styles */
+        @media (max-width: 1023px) {
+            .mobile-filter-drawer {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 300px;
+                background: white;
+                z-index: 60;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                overflow-y: auto;
+                visibility: hidden; /* Hide by default to prevent flash */
+            }
+
+            .mobile-filter-drawer.open {
+                transform: translateX(0);
+                visibility: visible;
+            }
+
+            .mobile-filter-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 50;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            }
+
+            .mobile-filter-overlay.open {
+                opacity: 1;
+                pointer-events: auto;
+            }
         }
     </style>
 @endsection
@@ -210,9 +245,27 @@
         @endif
 
         <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Mobile Filter Toggle -->
+            <div class="lg:hidden mb-4 w-full">
+                <button id="mobileFilterToggle" class="w-full flex items-center justify-center gap-2 bg-white p-3 rounded-lg shadow text-gray-700 font-medium hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                    <i class="fas fa-filter"></i> Filters & Sort
+                </button>
+            </div>
+
+            <!-- Mobile Filter Overlay -->
+            <div id="mobileFilterOverlay" class="mobile-filter-overlay"></div>
+
             <!-- Sidebar Filters -->
-            <div class="lg:w-1/4">
-                <div class="bg-white rounded-xl shadow p-5 sticky top-6 filter-section">
+            <div id="filterSidebar" class="mobile-filter-drawer lg:static lg:block lg:w-1/4 lg:h-auto lg:bg-transparent lg:shadow-none lg:transform-none lg:z-auto">
+                <div class="bg-white lg:rounded-xl lg:shadow p-5 sticky top-6 filter-section h-full lg:h-auto overflow-y-auto lg:overflow-visible">
+                    <!-- Mobile Header -->
+                    <div class="flex justify-between items-center mb-5 lg:hidden pb-4 border-b">
+                        <h3 class="text-xl font-bold text-gray-800">Filters</h3>
+                        <button id="closeMobileFilter" class="p-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
                     <!-- Filter Header -->
                     <div class="flex justify-between items-center mb-5">
                         <h3 class="text-lg font-bold text-gray-800">Filters</h3>
@@ -232,15 +285,15 @@
                         @endif
                     </div>
 
-                    <!-- Search Form -->
-                    <form method="GET" action="{{ route('customer.products.list') }}" class="mb-5">
-                        <div class="relative">
+                    <!-- Main Filter Form -->
+                    <form id="filterForm" method="GET" action="{{ route('customer.products.list') }}">
+                        <!-- Search Form -->
+                        <div class="mb-5 relative">
                             <input type="text" name="search" value="{{ $search ?? '' }}"
                                 placeholder="Search products..."
                                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                             <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                         </div>
-                    </form>
 
                     <!-- Categories -->
                     @if (isset($filters['categories']) && count($filters['categories']) > 0)
@@ -267,8 +320,7 @@
                     <!-- Price Range -->
                     <div class="mb-5">
                         <h4 class="font-semibold text-gray-800 mb-3">Price Range</h4>
-                        <form method="GET" action="{{ route('customer.products.list') }}" id="priceForm"
-                            class="space-y-4">
+                        <div class="space-y-4">
                             <div class="flex justify-between text-sm text-gray-600">
                                 <span>₹{{ number_format($filters['price_range']['min'] ?? 0) }}</span>
                                 <span>₹{{ number_format($filters['price_range']['max'] ?? 5000) }}</span>
@@ -285,7 +337,7 @@
                                 class="w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
                                 Apply Price
                             </button>
-                        </form>
+                        </div>
                     </div>
 
                     <!-- Brand Filter -->
@@ -320,6 +372,9 @@
                         </label>
                     </div>
 
+                    </form>
+                    <!-- End Main Filter Form -->
+
                     <!-- Special Filters -->
                     <div class="space-y-3">
                         <h4 class="font-semibold text-gray-800 mb-2">Special Collections</h4>
@@ -341,6 +396,13 @@
                                 <i class="fas fa-tag mr-1"></i> On Sale
                             </a>
                         </div>
+                    </div>
+
+                    <!-- Mobile Apply Button (Bottom Sticky) -->
+                    <div class="lg:hidden mt-6 pt-4 border-t sticky bottom-0 bg-white">
+                        <button onclick="document.getElementById('mobileFilterOverlay').click()" class="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold shadow-lg hover:bg-emerald-700">
+                            View Results
+                        </button>
                     </div>
                 </div>
             </div>
@@ -398,15 +460,7 @@
                             </select>
                         </form>
 
-                        <div class="flex items-center gap-2">
-                            <span class="text-gray-700 text-sm">View:</span>
-                            <button id="gridView" class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
-                                <i class="fas fa-th"></i>
-                            </button>
-                            <button id="listView" class="p-2 text-gray-500 hover:text-emerald-700 rounded-lg">
-                                <i class="fas fa-list"></i>
-                            </button>
-                        </div>
+                        <!-- View toggle removed -->
                     </div>
                 </div>
 
@@ -419,7 +473,7 @@
                                 <!-- Product Image -->
                                 <div class="product-image-container relative bg-stone-50">
                                     <a href="{{ route('customer.products.details', $product['slug']) }}">
-                                        <img src="{{ asset('storage/' . $product['main_image']) }}"
+                                        <img src="{{ asset('storage/' . ltrim($product['main_image'], '/')) }}"
                                             alt="{{ $product['name'] }}" class="product-image"
                                             onerror="this.src='/images/placeholder-product.jpg'">
                                     </a>
@@ -599,23 +653,26 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // View mode toggle
-            document.getElementById('gridView')?.addEventListener('click', function() {
-                setViewMode('grid');
-                this.classList.add('bg-emerald-100', 'text-emerald-700');
-                this.classList.remove('text-gray-500');
-                document.getElementById('listView').classList.remove('bg-emerald-100', 'text-emerald-700');
-                document.getElementById('listView').classList.add('text-gray-500');
-            });
+        // Mobile Filter Logic
+        function toggleMobileFilters(show) {
+            const sidebar = document.getElementById('filterSidebar');
+            const overlay = document.getElementById('mobileFilterOverlay');
+            if (show) {
+                sidebar.classList.add('open');
+                overlay.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            } else {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        }
 
-            document.getElementById('listView')?.addEventListener('click', function() {
-                setViewMode('list');
-                this.classList.add('bg-emerald-100', 'text-emerald-700');
-                this.classList.remove('text-gray-500');
-                document.getElementById('gridView').classList.remove('bg-emerald-100', 'text-emerald-700');
-                document.getElementById('gridView').classList.add('text-gray-500');
-            });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile Filter Event Listeners
+            document.getElementById('mobileFilterToggle')?.addEventListener('click', () => toggleMobileFilters(true));
+            document.getElementById('mobileFilterOverlay')?.addEventListener('click', () => toggleMobileFilters(false));
+            document.getElementById('closeMobileFilter')?.addEventListener('click', () => toggleMobileFilters(false));
 
             // Add to cart functionality
             document.querySelectorAll('.add-to-cart-btn').forEach(button => {
@@ -657,7 +714,7 @@
             });
 
             // Price form validation
-            document.getElementById('priceForm')?.addEventListener('submit', function(e) {
+            document.getElementById('filterForm')?.addEventListener('submit', function(e) {
                 const minPrice = this.querySelector('input[name="min_price"]').value;
                 const maxPrice = this.querySelector('input[name="max_price"]').value;
 
@@ -667,48 +724,9 @@
                 }
             });
 
-            // Set default view mode
-            const savedViewMode = localStorage.getItem('productViewMode') || 'grid';
-            if (savedViewMode === 'list') {
-                document.getElementById('listView')?.click();
-            } else {
-                document.getElementById('gridView')?.click();
-            }
+            // Set default view mode to grid always
+            localStorage.setItem('productViewMode', 'grid');
         });
-
-        // Set view mode
-        function setViewMode(mode) {
-            const productsContainer = document.getElementById('productsContainer');
-            if (!productsContainer) return;
-
-            if (mode === 'grid') {
-                productsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
-            } else {
-                productsContainer.className = 'grid grid-cols-1 gap-6';
-            }
-
-            productsContainer.querySelectorAll('.product-card').forEach(card => {
-                if (mode === 'grid') {
-                    card.classList.remove('list-view');
-                    card.classList.add('grid-view', 'flex-col');
-                    const imageContainer = card.querySelector('.product-image-container');
-                    if (imageContainer) {
-                        imageContainer.classList.remove('w-64', 'h-64', 'flex-shrink-0');
-                        imageContainer.classList.add('aspect-[4/5]');
-                    }
-                } else {
-                    card.classList.remove('grid-view', 'flex-col');
-                    card.classList.add('list-view', 'flex-row');
-                    const imageContainer = card.querySelector('.product-image-container');
-                    if (imageContainer) {
-                        imageContainer.classList.remove('aspect-[4/5]');
-                        imageContainer.classList.add('w-64', 'h-64', 'flex-shrink-0');
-                    }
-                }
-            });
-
-            localStorage.setItem('productViewMode', mode);
-        }
 
         // Update cart count
         function updateCartCount(count) {

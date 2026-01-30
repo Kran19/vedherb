@@ -64,7 +64,7 @@
     </div>
 
     <!-- Hero Slider Section -->
-    <section class="relative min-h-[40vh] md:min-h-[60vh] w-full overflow-hidden bg-stone-50">
+    <section class="relative min-h-[30vh] md:min-h-[60vh] w-full overflow-hidden bg-stone-50">
         <!-- Swiper Container -->
         <div class="swiper-container hero-swiper w-full h-full">
             <div class="swiper-wrapper">

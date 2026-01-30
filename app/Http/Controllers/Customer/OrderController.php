@@ -8,9 +8,19 @@ use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Services\SmsService;
+use App\Mail\OrderCancelled;
 
 class OrderController extends Controller
 {
+    protected $smsService;
+
+    public function __construct(SmsService $smsService)
+    {
+        $this->smsService = $smsService;
+    }
+
     public function orders()
     {
         $customer = Auth::guard('customer')->user();
@@ -115,6 +125,26 @@ class OrderController extends Controller
             'status' => 'cancelled',
             'notes' => 'Cancelled by customer: ' . $request->cancellation_reason,
         ]);
+
+        // 1. Send SMS Notification
+        try {
+            if ($customer->mobile) {
+                // Determine template based on SMS Service config, but user provided specific ID
+                // Config already updated in previous steps or existing Service uses config
+                $this->smsService->sendOrderCancelled($customer->mobile, $order->order_number);
+            }
+        } catch (\Exception $e) {
+            \Log::error("Failed to send cancellation SMS: " . $e->getMessage());
+        }
+
+        // 2. Send Email Notification
+        try {
+            if ($customer->email) {
+                Mail::to($customer->email)->send(new OrderCancelled($order));
+            }
+        } catch (\Exception $e) {
+            \Log::error("Failed to send cancellation Email: " . $e->getMessage());
+        }
 
         return redirect()->route('customer.account.orders.details', $id)
             ->with('success', 'Order cancelled successfully.');

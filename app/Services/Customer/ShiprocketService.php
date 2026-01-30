@@ -16,6 +16,7 @@ class ShiprocketService
     protected $email;
     protected $password;
     protected $tokenCacheKey = 'shiprocket_auth_token';
+    protected $client;
 
     public function __construct()
     {
@@ -89,7 +90,7 @@ class ShiprocketService
     {
         try {
             $pickupPostcode = config('services.shiprocket.pickup_pincode');
-            
+
             Log::info('Checking Shiprocket serviceability', [
                 'pincode' => $pincode,
                 'weight' => $weight,
@@ -112,12 +113,12 @@ class ShiprocketService
                 'length' => $dimensions['length'] ?? 10,
                 'breadth' => $dimensions['width'] ?? 10,
                 'height' => $dimensions['height'] ?? 10,
-                'cod' => 1 // Check for COD availability too
+                'cod' => 0 // Check for Prepaid availability (wider reach than COD)
             ];
 
             // Manual query string construction to ensure control over params if needed
             // But Http client should handle it. Added logging of params.
-            
+
             $response = $this->client->withToken($this->getToken())
                 ->acceptJson()
                 ->get($this->baseUrl . 'courier/serviceability', $params);
@@ -125,11 +126,11 @@ class ShiprocketService
             if (!$response->successful()) {
                 // Handle Token Expiry
                 if ($response->status() === 401 || isset($response->json()['message']) && $response->json()['message'] === 'token_expired') {
-                     Log::info('Shiprocket token expired (401). Retrying with fresh token.');
-                     Cache::forget($this->tokenCacheKey);
-                     
-                     // Retry once with new token
-                     $response = $this->client->withToken($this->getToken())
+                    Log::info('Shiprocket token expired (401). Retrying with fresh token.');
+                    Cache::forget($this->tokenCacheKey);
+
+                    // Retry once with new token
+                    $response = $this->client->withToken($this->getToken())
                         ->acceptJson()
                         ->get($this->baseUrl . 'courier/serviceability', $params);
                 }
@@ -140,12 +141,12 @@ class ShiprocketService
                         'response' => $response->json(),
                         'sent_params' => $params
                     ]);
-                    
+
                     $errorMsg = 'Shipping service unavailable.';
                     if ($response->status() === 403) {
-                         $errorMsg = 'Shipping service unauthorized (403).';
+                        $errorMsg = 'Shipping service unauthorized (403).';
                     }
-                    
+
                     // improved error debugging
                     $apiError = $response->json()['message'] ?? 'Unknown error';
                     $errorMsg .= ' Reason: ' . $apiError;
@@ -164,7 +165,7 @@ class ShiprocketService
             $availableCouriers = $this->processAvailableCouriers($data);
 
             if (empty($availableCouriers)) {
-                 return [
+                return [
                     'success' => false,
                     'message' => 'No delivery partners available for this pin code.'
                 ];
@@ -253,10 +254,7 @@ class ShiprocketService
             $orderData = [
                 'order_id' => $order->order_number,
                 'order_date' => $order->created_at->format('Y-m-d'),
-                'order_id' => $order->order_number,
-                'order_date' => $order->created_at->format('Y-m-d'),
                 'pickup_location' => config('services.shiprocket.pickup_location', 'Primary'),
-                'channel_id' => '',
                 'channel_id' => '',
                 'comment' => '',
                 'reseller_name' => '',
@@ -280,7 +278,7 @@ class ShiprocketService
                 'total_discount' => $order->discount_total,
                 'sub_total' => $order->subtotal + $order->tax_total,
             ];
-            
+
             // Add dimensions and weight
             $dimensions = $this->calculateOrderDimensions($order);
             $orderData = array_merge($orderData, $dimensions);
@@ -358,19 +356,22 @@ class ShiprocketService
         $maxHeight = 10;
 
         foreach ($order->items as $item) {
-             // We need to access ProductVariant. 
-             // OrderItem has relation ->variant()
-             $variant = $item->variant;
-             
-             if ($variant) {
-                 $l = $variant->length ?? ($item->product->length ?? 10);
-                 $w = $variant->width ?? ($item->product->width ?? 10);
-                 $h = $variant->height ?? ($item->product->height ?? 10);
-                 
-                 if ($l > $maxLength) $maxLength = $l;
-                 if ($w > $maxWidth) $maxWidth = $w;
-                 if ($h > $maxHeight) $maxHeight = $h;
-             }
+            // We need to access ProductVariant. 
+            // OrderItem has relation ->variant()
+            $variant = $item->variant;
+
+            if ($variant) {
+                $l = $variant->length ?? ($item->product->length ?? 10);
+                $w = $variant->width ?? ($item->product->width ?? 10);
+                $h = $variant->height ?? ($item->product->height ?? 10);
+
+                if ($l > $maxLength)
+                    $maxLength = $l;
+                if ($w > $maxWidth)
+                    $maxWidth = $w;
+                if ($h > $maxHeight)
+                    $maxHeight = $h;
+            }
         }
 
         return [
@@ -394,7 +395,7 @@ class ShiprocketService
             $weight += $productWeight * $item->quantity;
         }
 
-        return max($weight, 0.1); 
+        return max($weight, 0.1);
     }
 
     /**

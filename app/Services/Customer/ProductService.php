@@ -501,12 +501,12 @@ class ProductService
                     )
                         ->with([
                             'images' => function ($q) {
-                              $q->select('media.id', 'media.file_path', 'media.thumbnails', 'media.disk')
+                                $q->select('media.id', 'media.file_path', 'media.thumbnails', 'media.disk')
                                     ->orderBy('variant_images.is_primary', 'desc')
                                     ->orderBy('variant_images.sort_order');
                             },
                             'variantAttributes.attribute:id,name,code,type',
-'variantAttributes.attributeValue:id,value,label,color_code'
+                            'variantAttributes.attributeValue:id,value,label,color_code'
 
                         ]);
                 },
@@ -603,13 +603,13 @@ class ProductService
             $attributes = optional($variant->variantAttributes)
                 ->map(function ($va) {
                     return [
-                        'attribute_id'   => $va->attribute->id ?? null,
+                        'attribute_id' => $va->attribute->id ?? null,
                         'attribute_name' => $va->attribute->name ?? null,
                         'attribute_code' => $va->attribute->code ?? null,
                         'attribute_type' => $va->attribute->type ?? null,
-                        'value'          => $va->attributeValue->value ?? null,
-                        'label'          => $va->attributeValue->label ?? null,
-                        'color_code'     => $va->attributeValue->color_code ?? null,
+                        'value' => $va->attributeValue->value ?? null,
+                        'label' => $va->attributeValue->label ?? null,
+                        'color_code' => $va->attributeValue->color_code ?? null,
                     ];
                 })
                 ->values()
@@ -624,6 +624,7 @@ class ProductService
                 'stock_quantity' => $variant->stock_quantity,
                 'stock_status' => $variant->stock_status,
                 'is_default' => (bool) $variant->is_default,
+                'main_image' => collect($images)->where('is_primary', true)->first()['url'] ?? ($images[0]['url'] ?? null),
                 'images' => $images,
                 'attributes' => $attributes,
             ];
