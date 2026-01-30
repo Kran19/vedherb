@@ -61,8 +61,13 @@
 
         /* Fix for consistent image size */
         .product-image-container {
-            aspect-ratio: 4/5;
+            height: 280px;
+            width: 100%;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f9fafb;
         }
 
         .product-image {
@@ -85,6 +90,7 @@
 
         .list-view .product-image-container {
             width: 250px;
+            height: auto !important;
             aspect-ratio: 1/1 !important;
             flex-shrink: 0;
         }
