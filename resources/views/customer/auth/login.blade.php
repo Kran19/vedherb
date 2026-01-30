@@ -79,6 +79,7 @@
                                 class="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400">
                             </iconify-icon>
                             <input type="tel" name="mobile" value="{{ old('mobile') }}" required autocomplete="tel"
+                                maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
                                 autofocus
                                 class="w-full bg-stone-50 border border-stone-300 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 @error('mobile') border-red-500 @enderror"
                                 placeholder="Enter your mobile number">
@@ -249,9 +250,9 @@
                 if (loginBtn) {
                     loginBtn.disabled = true;
                     loginBtn.innerHTML = `
-                        <iconify-icon icon="lucide:loader-2" width="18" class="animate-spin"></iconify-icon>
-                        Signing In...
-                    `;
+                            <iconify-icon icon="lucide:loader-2" width="18" class="animate-spin"></iconify-icon>
+                            Signing In...
+                        `;
                 }
             });
 
@@ -338,6 +339,6 @@
                     });
                 @endforeach
             @endif
-        });
+            });
     </script>
 @endpush

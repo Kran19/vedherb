@@ -65,19 +65,7 @@
                     <p class="text-stone-600">Enter the verification code sent to your mobile</p>
                 </div>
 
-                <!-- Demo OTP (Dev Mode) -->
-                @if(session('email_otp'))
-                    <div class="mb-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200 relative">
-                        <h3 class="font-semibold text-emerald-800 mb-2 flex items-center gap-2">
-                            <iconify-icon icon="lucide:code" width="16"></iconify-icon>
-                            Demo OTP (Dev Mode)
-                        </h3>
-                        <div>
-                            <p class="text-sm text-emerald-700">Demo OTP:</p>
-                            <p class="text-lg font-mono font-bold text-emerald-800 tracking-wider">{{ session('otp') }}</p>
-                        </div>
-                    </div>
-                @endif
+
 
                 <!-- Form -->
                 <form id="verifyForm" class="space-y-6 relative" method="POST"
@@ -176,6 +164,7 @@
                                                     class="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400"></iconify-icon>
                                                 <input type="tel" id="newMobileInput" required pattern="[0-9]{10}"
                                                     maxlength="10"
+                                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
                                                     class="w-full bg-stone-50 border border-stone-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                                     placeholder="Enter 10-digit mobile number">
                                             </div>
@@ -446,6 +435,6 @@
                     confirmButtonColor: '#065f46',
                 });
             @endif
-        });
+                });
     </script>
 @endpush

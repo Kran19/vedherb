@@ -3,7 +3,7 @@
 @section('title', $title ?? 'All Products - Ved Herbs & Ayurveda')
 @section('meta_description', $meta_description ?? 'Browse our complete collection of natural healing and wellness solutions.')
 
-@section('styles')
+@push('styles')
     <style>
         .filter-section {
             transition: all 0.3s ease;
@@ -143,8 +143,11 @@
             border-color: #059669;
         }
 
-        /* Grid view button positioning */
-        .grid-view .action-buttons {
+        /* Grid view button positioning (Default) */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
             position: absolute;
             bottom: 1rem;
             left: 1rem;
@@ -152,17 +155,56 @@
             opacity: 1;
         }
 
-        .grid-view .btn-add-to-cart {
+        .btn-add-to-cart {
             padding: 0.625rem 1rem;
             font-size: 0.875rem;
         }
 
-        /* List view button positioning */
-        .list-view .action-buttons {
-            margin-top: auto;
+        /* Mobile Filter Styles */
+        @media (max-width: 1023px) {
+            .mobile-filter-drawer {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 320px;
+                background: white;
+                z-index: 100;
+                transform: translateX(-100%);
+                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                overflow-y: auto;
+                box-shadow: 10px 0 25px rgba(0, 0, 0, 0.1);
+                visibility: hidden;
+            }
+
+            .mobile-filter-drawer.open {
+                transform: translateX(0);
+                visibility: visible;
+            }
+
+            .mobile-filter-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+                z-index: 90;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.4s ease;
+            }
+
+            .mobile-filter-overlay.open {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .filter-section-container {
+                padding: 1.5rem;
+            }
         }
     </style>
-@endsection
+@endpush
 
 @section('content')
     <!-- Breadcrumb -->
@@ -210,9 +252,31 @@
         @endif
 
         <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Mobile Filter Toggle -->
+            <div class="lg:hidden mb-6 w-full">
+                <button id="mobileFilterToggle" class="w-full flex items-center justify-center gap-3 bg-white py-4 px-6 rounded-xl border border-stone-200 shadow-sm text-stone-700 font-semibold hover:bg-stone-50 active:scale-[0.98] transition-all">
+                    <i class="fas fa-sliders-h text-emerald-600"></i>
+                    <span>Filter & Sort</span>
+                </button>
+            </div>
+
+            <!-- Mobile Filter Overlay -->
+            <div id="mobileFilterOverlay" class="mobile-filter-overlay"></div>
+
             <!-- Sidebar Filters -->
-            <div class="lg:w-1/4">
-                <div class="bg-white rounded-xl shadow p-5 sticky top-6 filter-section">
+            <div id="filterSidebar" class="mobile-filter-drawer lg:static lg:block lg:w-1/4 lg:h-auto lg:bg-transparent lg:shadow-none lg:transform-none lg:z-auto">
+                <div class="bg-white lg:rounded-xl lg:shadow p-5 sticky top-6 filter-section h-full lg:h-auto overflow-y-auto lg:overflow-visible">
+                    <!-- Mobile Header -->
+                    <div class="flex justify-between items-center mb-6 lg:hidden pb-4 border-b border-stone-100">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-sliders-h text-emerald-600"></i>
+                            <h3 class="text-xl font-bold text-stone-800">Filter & Sort</h3>
+                        </div>
+                        <button id="closeMobileFilter" class="w-10 h-10 flex items-center justify-center rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+
                     <!-- Filter Header -->
                     <div class="flex justify-between items-center mb-5">
                         <h3 class="text-lg font-bold text-gray-800">Filters</h3>
@@ -227,24 +291,24 @@
                                 'is_new',
                                 'is_bestseller',
                             ]))
-                            <a href="{{ route('customer.products.list') }}"
+                            <a href="{{ url()->current() }}"
                                 class="text-sm text-emerald-700 hover:text-emerald-800">Clear All</a>
                         @endif
                     </div>
 
-                    <!-- Search Form -->
-                    <form method="GET" action="{{ route('customer.products.list') }}" class="mb-5">
-                        <div class="relative">
+                    <!-- Main Filter Form -->
+                    <form id="filterForm" method="GET" action="{{ url()->current() }}">
+                        <!-- Search Form -->
+                        <div class="mb-5 relative">
                             <input type="text" name="search" value="{{ $search ?? '' }}"
                                 placeholder="Search products..."
                                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                             <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                         </div>
-                    </form>
 
                     <!-- Categories -->
                     @if (isset($filters['categories']) && count($filters['categories']) > 0)
-                        <div class="mb-5">
+                        <div id="filter-categories" class="mb-5">
                             <h4 class="font-semibold text-gray-800 mb-3">Categories</h4>
                             <div class="space-y-2 max-h-60 overflow-y-auto">
                                 @foreach ($filters['categories'] as $category)
@@ -265,10 +329,9 @@
                     @endif
 
                     <!-- Price Range -->
-                    <div class="mb-5">
+                    <div id="filter-price" class="mb-5">
                         <h4 class="font-semibold text-gray-800 mb-3">Price Range</h4>
-                        <form method="GET" action="{{ route('customer.products.list') }}" id="priceForm"
-                            class="space-y-4">
+                        <div class="space-y-4">
                             <div class="flex justify-between text-sm text-gray-600">
                                 <span>₹{{ number_format($filters['price_range']['min'] ?? 0) }}</span>
                                 <span>₹{{ number_format($filters['price_range']['max'] ?? 5000) }}</span>
@@ -285,12 +348,12 @@
                                 class="w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
                                 Apply Price
                             </button>
-                        </form>
+                        </div>
                     </div>
 
                     <!-- Brand Filter -->
                     @if (isset($filters['brands']) && count($filters['brands']) > 0)
-                        <div class="mb-5">
+                        <div id="filter-brands" class="mb-5">
                             <h4 class="font-semibold text-gray-800 mb-3">Brands</h4>
                             <div class="space-y-2 max-h-60 overflow-y-auto">
                                 @foreach ($filters['brands'] as $brand)
@@ -311,36 +374,71 @@
                     @endif
 
                     <!-- Availability -->
-                    <div class="mb-5">
+                    <div id="filter-availability" class="mb-5">
                         <h4 class="font-semibold text-gray-800 mb-3">Availability</h4>
                         <label class="flex items-center p-2 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors">
                             <input type="checkbox" name="in_stock" value="1" class="h-4 w-4 text-emerald-600 rounded"
                                 {{ ($inStock ?? false) ? 'checked' : '' }} onchange="this.form.submit()">
-                            <span class="text-gray-700 ml-3">In Stock Only</span>
-                        </label>
-                    </div>
+                                <span class="text-gray-700 ml-3">In Stock Only</span>
+                            </label>
+                        </div>
+
+                        <!-- Mobile Sort Section -->
+                        <div id="mobile-sort-section" class="mb-5 lg:hidden">
+                            <h4 class="font-semibold text-gray-800 mb-3">Sort By</h4>
+                            <div class="space-y-2">
+                                @php
+                                    $sortOptions = [
+                                        'newest' => 'Newest First',
+                                        'price_asc' => 'Price: Low to High',
+                                        'price_desc' => 'Price: High to Low',
+                                        'popular' => 'Most Popular',
+                                        'name_asc' => 'Name: A to Z',
+                                        'name_desc' => 'Name: Z to A'
+                                    ];
+                                @endphp
+                                @foreach($sortOptions as $value => $label)
+                                    <label class="flex items-center p-2 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors">
+                                        <input type="radio" name="sort_by" value="{{ $value }}" 
+                                            class="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                                            {{ ($sortBy ?? 'newest') == $value ? 'checked' : '' }}
+                                            onchange="this.form.submit()">
+                                        <span class="text-gray-700 ml-3">{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    </form>
+                    <!-- End Main Filter Form -->
 
                     <!-- Special Filters -->
-                    <div class="space-y-3">
+                    <div id="filter-special" class="space-y-3">
                         <h4 class="font-semibold text-gray-800 mb-2">Special Collections</h4>
                         <div class="grid grid-cols-2 gap-2">
-                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_featured' => 1])) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['is_featured' => 1]) }}"
                                 class="text-center py-2 px-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm">
                                 <i class="fas fa-star mr-1"></i> Featured
                             </a>
-                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_new' => 1])) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['is_new' => 1]) }}"
                                 class="text-center py-2 px-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm">
                                 <i class="fas fa-bolt mr-1"></i> New arrivals
                             </a>
-                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_bestseller' => 1])) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['is_bestseller' => 1]) }}"
                                 class="text-center py-2 px-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm">
                                 <i class="fas fa-fire mr-1"></i> Best sellers
                             </a>
-                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['has_discount' => 1])) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['has_discount' => 1]) }}"
                                 class="text-center py-2 px-3 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 text-sm">
                                 <i class="fas fa-tag mr-1"></i> On Sale
                             </a>
                         </div>
+                    </div>
+
+                    <!-- Mobile Apply Button (Bottom Sticky) -->
+                    <div class="lg:hidden mt-8 pt-6 border-t border-stone-100 sticky bottom-0 bg-white">
+                        <button onclick="toggleMobileFilters(false)" class="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 active:scale-[0.98] transition-all">
+                            Show Results
+                        </button>
                     </div>
                 </div>
             </div>
@@ -367,8 +465,9 @@
                     </div>
 
                     <div class="flex items-center gap-4">
+                        <div class="hidden lg:flex items-center gap-4">
                         <!-- Sort Form -->
-                        <form method="GET" action="{{ route('customer.products.list') }}">
+                        <form method="GET" action="{{ url()->current() }}">
                             @foreach (request()->except('sort_by', 'page') as $key => $value)
                                 @if (is_array($value))
                                     @foreach ($value as $val)
@@ -398,15 +497,7 @@
                             </select>
                         </form>
 
-                        <div class="flex items-center gap-2">
-                            <span class="text-gray-700 text-sm">View:</span>
-                            <button id="gridView" class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
-                                <i class="fas fa-th"></i>
-                            </button>
-                            <button id="listView" class="p-2 text-gray-500 hover:text-emerald-700 rounded-lg">
-                                <i class="fas fa-list"></i>
-                            </button>
-                        </div>
+                        <!-- View toggle removed -->
                     </div>
                 </div>
 
@@ -419,7 +510,7 @@
                                 <!-- Product Image -->
                                 <div class="product-image-container relative bg-stone-50">
                                     <a href="{{ route('customer.products.details', $product['slug']) }}">
-                                        <img src="{{ asset('storage/' . $product['main_image']) }}"
+                                        <img src="{{ asset('storage/' . ltrim($product['main_image'], '/')) }}"
                                             alt="{{ $product['name'] }}" class="product-image"
                                             onerror="this.src='/images/placeholder-product.jpg'">
                                     </a>
@@ -509,7 +600,7 @@
                                 <nav class="flex items-center gap-1">
                                     <!-- Previous Page -->
                                     @if ($paginator['current_page'] > 1)
-                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $paginator['current_page'] - 1])) }}"
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $paginator['current_page'] - 1]) }}"
                                             class="w-10 h-10 flex items-center justify-center rounded-lg text-gray-600 hover:bg-emerald-50 hover:text-emerald-700">
                                             <i class="fas fa-chevron-left"></i>
                                         </a>
@@ -522,7 +613,7 @@
                                     @endphp
 
                                     @for ($i = $start; $i <= $end; $i++)
-                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $i])) }}"
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $i]) }}"
                                             class="w-10 h-10 flex items-center justify-center rounded-lg
                                                 {{ $i == $paginator['current_page'] ? 'bg-emerald-600 text-white' : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-700' }}">
                                             {{ $i }}
@@ -531,7 +622,7 @@
 
                                     <!-- Next Page -->
                                     @if ($paginator['current_page'] < $paginator['last_page'])
-                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $paginator['current_page'] + 1])) }}"
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $paginator['current_page'] + 1]) }}"
                                             class="w-10 h-10 flex items-center justify-center rounded-lg text-gray-600 hover:bg-emerald-50 hover:text-emerald-700">
                                             <i class="fas fa-chevron-right"></i>
                                         </a>
@@ -546,7 +637,7 @@
                         <i class="fas fa-search text-gray-300 text-5xl mb-4"></i>
                         <h3 class="text-xl font-semibold text-gray-700 mb-2">No Products Found</h3>
                         <p class="text-gray-600 mb-6">Try adjusting your filters or search terms</p>
-                        <a href="{{ route('customer.products.list') }}"
+                        <a href="{{ url()->current() }}"
                             class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
                             Reset All Filters
                         </a>
@@ -599,23 +690,35 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // View mode toggle
-            document.getElementById('gridView')?.addEventListener('click', function() {
-                setViewMode('grid');
-                this.classList.add('bg-emerald-100', 'text-emerald-700');
-                this.classList.remove('text-gray-500');
-                document.getElementById('listView').classList.remove('bg-emerald-100', 'text-emerald-700');
-                document.getElementById('listView').classList.add('text-gray-500');
-            });
+        // Mobile Filter Logic
+        function toggleMobileFilters(show, targetId = null) {
+            const sidebar = document.getElementById('filterSidebar');
+            const overlay = document.getElementById('mobileFilterOverlay');
+            if (show) {
+                sidebar.classList.add('open');
+                overlay.classList.add('open');
+                document.body.style.overflow = 'hidden';
 
-            document.getElementById('listView')?.addEventListener('click', function() {
-                setViewMode('list');
-                this.classList.add('bg-emerald-100', 'text-emerald-700');
-                this.classList.remove('text-gray-500');
-                document.getElementById('gridView').classList.remove('bg-emerald-100', 'text-emerald-700');
-                document.getElementById('gridView').classList.add('text-gray-500');
-            });
+                if (targetId) {
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        setTimeout(() => {
+                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                    }
+                }
+            } else {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile Filter Event Listeners
+            document.getElementById('mobileFilterToggle')?.addEventListener('click', () => toggleMobileFilters(true));
+            document.getElementById('mobileFilterOverlay')?.addEventListener('click', () => toggleMobileFilters(false));
+            document.getElementById('closeMobileFilter')?.addEventListener('click', () => toggleMobileFilters(false));
 
             // Add to cart functionality
             document.querySelectorAll('.add-to-cart-btn').forEach(button => {
@@ -657,7 +760,7 @@
             });
 
             // Price form validation
-            document.getElementById('priceForm')?.addEventListener('submit', function(e) {
+            document.getElementById('filterForm')?.addEventListener('submit', function(e) {
                 const minPrice = this.querySelector('input[name="min_price"]').value;
                 const maxPrice = this.querySelector('input[name="max_price"]').value;
 
@@ -667,48 +770,9 @@
                 }
             });
 
-            // Set default view mode
-            const savedViewMode = localStorage.getItem('productViewMode') || 'grid';
-            if (savedViewMode === 'list') {
-                document.getElementById('listView')?.click();
-            } else {
-                document.getElementById('gridView')?.click();
-            }
+            // Set default view mode to grid always
+            localStorage.setItem('productViewMode', 'grid');
         });
-
-        // Set view mode
-        function setViewMode(mode) {
-            const productsContainer = document.getElementById('productsContainer');
-            if (!productsContainer) return;
-
-            if (mode === 'grid') {
-                productsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
-            } else {
-                productsContainer.className = 'grid grid-cols-1 gap-6';
-            }
-
-            productsContainer.querySelectorAll('.product-card').forEach(card => {
-                if (mode === 'grid') {
-                    card.classList.remove('list-view');
-                    card.classList.add('grid-view', 'flex-col');
-                    const imageContainer = card.querySelector('.product-image-container');
-                    if (imageContainer) {
-                        imageContainer.classList.remove('w-64', 'h-64', 'flex-shrink-0');
-                        imageContainer.classList.add('aspect-[4/5]');
-                    }
-                } else {
-                    card.classList.remove('grid-view', 'flex-col');
-                    card.classList.add('list-view', 'flex-row');
-                    const imageContainer = card.querySelector('.product-image-container');
-                    if (imageContainer) {
-                        imageContainer.classList.remove('aspect-[4/5]');
-                        imageContainer.classList.add('w-64', 'h-64', 'flex-shrink-0');
-                    }
-                }
-            });
-
-            localStorage.setItem('productViewMode', mode);
-        }
 
         // Update cart count
         function updateCartCount(count) {

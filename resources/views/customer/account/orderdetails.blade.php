@@ -51,26 +51,27 @@
                             <div class="flex items-center gap-3 mb-1">
                                 <h1 class="text-xl sm:text-2xl font-bold text-stone-900">Order #{{ $order->order_number }}
                                 </h1>
-        @php
-            $statusClasses = [
-                'pending' => 'bg-yellow-100 text-yellow-800',
-                'confirmed' => 'bg-blue-100 text-blue-800',
-                'processing' => 'bg-amber-100 text-amber-800',
-                'shipped' => 'bg-indigo-100 text-indigo-800',
-                'delivered' => 'bg-green-100 text-green-800',
-                'cancelled' => 'bg-red-100 text-red-800',
-                'refunded' => 'bg-purple-100 text-purple-800',
-                'returned' => 'bg-pink-100 text-pink-800',
-            ];
-            $statusClass = $statusClasses[$order->status] ?? 'bg-stone-100 text-stone-800';
-        @endphp
+                                @php
+                                    $statusClasses = [
+                                        'pending' => 'bg-yellow-100 text-yellow-800',
+                                        'confirmed' => 'bg-blue-100 text-blue-800',
+                                        'processing' => 'bg-amber-100 text-amber-800',
+                                        'shipped' => 'bg-indigo-100 text-indigo-800',
+                                        'delivered' => 'bg-green-100 text-green-800',
+                                        'cancelled' => 'bg-red-100 text-red-800',
+                                        'refunded' => 'bg-purple-100 text-purple-800',
+                                        'returned' => 'bg-pink-100 text-pink-800',
+                                    ];
+                                    $statusClass = $statusClasses[$order->status] ?? 'bg-stone-100 text-stone-800';
+                                @endphp
                                 <span
                                     class="px-2.5 py-0.5 rounded-full {{ $statusClass }} text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                                     {{ $order->status }}
                                 </span>
                             </div>
                             <p class="text-xs sm:text-sm text-stone-500">Placed on
-                                {{ $order->created_at->format('d M, Y \a\t h:i A') }}</p>
+                                {{ $order->created_at->format('d M, Y \a\t h:i A') }}
+                            </p>
                         </div>
                         <div class="text-left sm:text-right">
                             <p class="text-2xl sm:text-3xl font-black text-emerald-700">
@@ -115,7 +116,8 @@
                                 <p class="font-bold text-stone-900 mb-1">{{ $shippingAddress['name'] ?? 'N/A' }}</p>
                                 <p>{{ $shippingAddress['address'] ?? 'N/A' }}</p>
                                 <p>{{ $shippingAddress['city'] ?? 'N/A' }}, {{ $shippingAddress['state'] ?? 'N/A' }}
-                                    {{ $shippingAddress['pincode'] ?? '' }}</p>
+                                    {{ $shippingAddress['pincode'] ?? '' }}
+                                </p>
                                 <div class="mt-2 text-stone-900 font-semibold flex items-center gap-2">
                                     <iconify-icon icon="lucide:phone" width="14"></iconify-icon>
                                     {{ $shippingAddress['mobile'] ?? ($shippingAddress['phone'] ?? 'N/A') }}
@@ -235,7 +237,8 @@
                                     <div class="pb-6">
                                         <p class="text-sm font-bold text-stone-900">{{ ucfirst($h->status) }}</p>
                                         <p class="text-[10px] text-stone-400 font-bold uppercase tracking-widest">
-                                            {{ $h->created_at->format('d M, h:i A') }}</p>
+                                            {{ $h->created_at->format('d M, h:i A') }}
+                                        </p>
                                         @if($h->notes)
                                             <p class="text-xs text-stone-500 mt-1 italic">{{ $h->notes }}</p>
                                         @endif
@@ -256,12 +259,7 @@
                                     <iconify-icon icon="lucide:download"
                                         class="text-stone-300 group-hover:text-emerald-600 transition-colors"></iconify-icon>
                                 </button>
-                                <button onclick="window.print()"
-                                    class="w-full flex items-center justify-between px-4 py-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors group">
-                                    <span class="text-sm font-bold text-stone-700">Print Details</span>
-                                    <iconify-icon icon="lucide:printer"
-                                        class="text-stone-300 group-hover:text-emerald-600 transition-colors"></iconify-icon>
-                                </button>
+
                                 @if(in_array($order->status, ['pending', 'confirmed']))
                                     <button onclick="openCancelModal()"
                                         class="w-full flex items-center justify-between px-4 py-3 bg-red-50 rounded-xl hover:bg-red-100 transition-colors group">

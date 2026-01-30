@@ -173,6 +173,12 @@ $navItems = [
         'route' => 'admin.pages.index',
     ],
 
+    'videos' => [
+        'title' => 'YouTube Videos',
+        'icon' => 'fab fa-youtube',
+        'route' => 'admin.videos.index',
+    ],
+
     'reviews' => [
         'title' => 'Reviews',
         'icon' => 'fas fa-star',
@@ -199,8 +205,7 @@ $isActive = function ($route, $params = []) use ($currentRoute) {
 };
 ?>
 
-<aside id="sidebar"
-    class="fixed left-0 top-0 z-40 h-screen bg-white/80 backdrop-blur-lg
+<aside id="sidebar" class="fixed left-0 top-0 z-40 h-screen bg-white/80 backdrop-blur-lg
               border-r border-gray-200/50 shadow-lg group transition-all duration-300
               overflow-hidden sidebar-collapsed
               -translate-x-full md:translate-x-0">
@@ -213,8 +218,7 @@ $isActive = function ($route, $params = []) use ($currentRoute) {
                     class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
                     <i class="fas fa-store text-white text-lg"></i>
                 </div>
-                <span
-                    class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600
+                <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600
                              bg-clip-text text-transparent transition-all duration-300
                              text-expandable whitespace-nowrap">
                     eCommerce
@@ -238,20 +242,18 @@ $isActive = function ($route, $params = []) use ($currentRoute) {
                     <!-- Parent Menu -->
                     <a href="{{ $hasSubmenu ? '#' : route($item['route']) }}"
                         class="parent-link flex items-center gap-3 px-4 py-3 rounded-xl
-                               text-gray-700 hover:bg-white/50 hover:shadow-sm
-                               transition-all duration-200 group-hover:pr-6
-                               {{ $active ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-r-2 border-indigo-500 text-indigo-600' : '' }}">
-                        <i
-                            class="{{ $item['icon'] }} text-xl min-w-6 text-center
-                                  {{ $active ? 'text-indigo-500' : 'text-gray-400 group-hover:text-indigo-400' }}">
+                                   text-gray-700 hover:bg-white/50 hover:shadow-sm
+                                   transition-all duration-200 group-hover:pr-6
+                                   {{ $active ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-r-2 border-indigo-500 text-indigo-600' : '' }}">
+                        <i class="{{ $item['icon'] }} text-xl min-w-6 text-center
+                                      {{ $active ? 'text-indigo-500' : 'text-gray-400 group-hover:text-indigo-400' }}">
                         </i>
                         <span class="font-medium transition-all duration-300 text-expandable whitespace-nowrap">
                             {{ $item['title'] }}
                         </span>
                         @if ($hasSubmenu)
-                            <i
-                                class="fas fa-chevron-down text-xs ml-auto transition-all duration-300
-                                      {{ $submenuOpen ? 'transform rotate-180' : '' }}"></i>
+                            <i class="fas fa-chevron-down text-xs ml-auto transition-all duration-300
+                                              {{ $submenuOpen ? 'transform rotate-180' : '' }}"></i>
                         @endif
                     </a>
 
@@ -262,10 +264,9 @@ $isActive = function ($route, $params = []) use ($currentRoute) {
                                 @php
                                     $subActive = $isActive($subItem['route']);
                                 @endphp
-                                <a href="{{ route($subItem['route'], $subItem['params'] ?? []) }}"
-                                    class="submenu-link block px-4 py-2 text-sm rounded-lg
-                                          {{ $subActive ? 'bg-white/50 text-indigo-600' : 'text-gray-600 hover:bg-white/50 hover:text-indigo-600' }}
-                                          transition-all duration-200 text-expandable whitespace-nowrap">
+                                <a href="{{ route($subItem['route'], $subItem['params'] ?? []) }}" class="submenu-link block px-4 py-2 text-sm rounded-lg
+                                                      {{ $subActive ? 'bg-white/50 text-indigo-600' : 'text-gray-600 hover:bg-white/50 hover:text-indigo-600' }}
+                                                      transition-all duration-200 text-expandable whitespace-nowrap">
                                     {{ $subItem['title'] }}
                                 </a>
                             @endforeach

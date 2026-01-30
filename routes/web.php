@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\InventoryController as AdminInventory;
 use App\Http\Controllers\Admin\OfferController as AdminOffer;
 use App\Http\Controllers\Admin\BannerController as AdminBanner;
 use App\Http\Controllers\Admin\HomeSectionController as AdminHomeSection;
+use App\Http\Controllers\Admin\VideoController as AdminVideo;
 
 
 /*
@@ -266,6 +267,21 @@ Route::prefix('admin')->group(function () {
 
         /*
         |--------------------------------------------------------------------------
+        | VIDEO MANAGEMENT
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('videos')->name('admin.videos.')->group(function () {
+            Route::get('/', [AdminVideo::class, 'index'])->name('index');
+            Route::get('/create', [AdminVideo::class, 'create'])->name('create');
+            Route::post('/', [AdminVideo::class, 'store'])->name('store');
+            Route::get('/{video}/edit', [AdminVideo::class, 'edit'])->name('edit');
+            Route::put('/{video}', [AdminVideo::class, 'update'])->name('update');
+            Route::delete('/{video}', [AdminVideo::class, 'destroy'])->name('destroy');
+            Route::post('/{video}/toggle-status', [AdminVideo::class, 'toggleStatus'])->name('toggle-status');
+        });
+
+        /*
+        |--------------------------------------------------------------------------
         | REPORTS
         |--------------------------------------------------------------------------
         */
@@ -338,7 +354,19 @@ Route::name('customer.')->group(function () {
 
     Route::post('/logout', [CustomerAuth::class, 'logout'])->name('logout');
 
+    /*
+    |--------------------------------------------------------------------------
+    | PASSWORD RESET (SMS OTP)
+    |--------------------------------------------------------------------------
+    */
     Route::get('/forgot-password', [CustomerAuth::class, 'showForgotPassword'])->name('forgot-password');
+    Route::post('/forgot-password/send-otp', [CustomerAuth::class, 'sendResetOtp'])->name('forgot-password.send-otp');
+
+    Route::get('/forgot-password/verify', [CustomerAuth::class, 'showVerifyResetOtp'])->name('forgot-password.verify');
+    Route::post('/forgot-password/verify', [CustomerAuth::class, 'verifyResetOtp'])->name('forgot-password.verify.submit');
+
+    Route::get('/reset-password', [CustomerAuth::class, 'showResetPassword'])->name('reset-password');
+    Route::post('/reset-password', [CustomerAuth::class, 'resetPassword'])->name('reset-password.submit');
 
     /*
     |--------------------------------------------------------------------------

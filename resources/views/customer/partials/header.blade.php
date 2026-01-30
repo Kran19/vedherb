@@ -16,7 +16,7 @@
             <a href="{{ route('customer.home.index') }}" class="nav-link">Home</a>
             <a href="{{ route('customer.products.shop') }}" class="nav-link">Shop</a>
             <a href="{{ route('customer.page.about') }}" class="nav-link">About us</a>
-            <a href="{{ route('customer.products.blog') }}" class="nav-link">Blog</a>
+            <a href="{{ route('customer.products.shop', ['is_bestseller' => 1]) }}" class="nav-link">Best Seller</a>
             <a href="{{ route('customer.page.videos') }}" class="nav-link">Videos</a>
         </nav>
 
@@ -27,11 +27,11 @@
         <!-- Icons Section -->
         <div class="icons-section">
             <!-- Search Input -->
-            <div class="search-container">
+            <form action="{{ route('customer.products.search') }}" method="GET" class="search-container">
                 <i data-lucide="search" class="search-icon"></i>
-                <input type="text" placeholder="Search herbs, wellness..." class="search-input"
-                    aria-label="Search products">
-            </div>
+                <input type="text" name="q" value="{{ request('q') }}" placeholder="Search herbs, wellness..."
+                    class="search-input" aria-label="Search products">
+            </form>
 
             <!-- Account Icon -->
             <a href="{{ route('customer.account.profile') }}" class="icon-link" aria-label="My account">
@@ -89,12 +89,12 @@
             <span>About us</span>
         </a>
 
-        <a href="{{ route('customer.products.blog') }}"
+        <a href="{{ route('customer.products.shop', ['is_bestseller' => 1]) }}"
             style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem 0; font-size: 1.125rem; font-weight: 500; color: #44403c; transition: all 0.2s; border-radius: 0.5rem; padding-left: 0.75rem;"
             onmouseover="this.style.color='#065f46'; this.style.backgroundColor='#fafaf9'"
             onmouseout="this.style.color='#44403c'; this.style.backgroundColor='transparent'">
-            <iconify-icon icon="lucide:file-text" width="18"></iconify-icon>
-            <span>Blog</span>
+            <iconify-icon icon="lucide:star" width="18"></iconify-icon>
+            <span>Best Seller</span>
         </a>
 
         <a href="{{ route('customer.page.videos') }}"

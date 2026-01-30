@@ -45,6 +45,10 @@ class PageController extends Controller
 
     public function videos()
     {
-        return view('customer.pages.videos');
+        $videos = \App\Models\Video::where('status', 1)
+            ->orderBy('is_featured', 'desc')
+            ->latest()
+            ->get();
+        return view('customer.pages.videos', compact('videos'));
     }
 }

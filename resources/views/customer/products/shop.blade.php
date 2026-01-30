@@ -3,7 +3,7 @@
 @section('title', $title ?? 'All Products - Ved Herbs & Ayurveda')
 @section('meta_description', $meta_description ?? 'Browse our complete collection of natural healing and wellness solutions.')
 
-@section('styles')
+@push('styles')
     <style>
         .filter-section {
             transition: all 0.3s ease;
@@ -167,13 +167,14 @@
                 top: 0;
                 left: 0;
                 height: 100vh;
-                width: 300px;
+                width: 320px;
                 background: white;
-                z-index: 60;
+                z-index: 100;
                 transform: translateX(-100%);
-                transition: transform 0.3s ease;
+                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                 overflow-y: auto;
-                visibility: hidden; /* Hide by default to prevent flash */
+                box-shadow: 10px 0 25px rgba(0, 0, 0, 0.1);
+                visibility: hidden;
             }
 
             .mobile-filter-drawer.open {
@@ -184,20 +185,26 @@
             .mobile-filter-overlay {
                 position: fixed;
                 inset: 0;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 50;
+                background: rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+                z-index: 90;
                 opacity: 0;
                 pointer-events: none;
-                transition: opacity 0.3s ease;
+                transition: opacity 0.4s ease;
             }
 
             .mobile-filter-overlay.open {
                 opacity: 1;
                 pointer-events: auto;
             }
+
+            .filter-section-container {
+                padding: 1.5rem;
+            }
         }
     </style>
-@endsection
+@endpush
 
 @section('content')
     <!-- Breadcrumb -->
@@ -246,9 +253,10 @@
 
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Mobile Filter Toggle -->
-            <div class="lg:hidden mb-4 w-full">
-                <button id="mobileFilterToggle" class="w-full flex items-center justify-center gap-2 bg-white p-3 rounded-lg shadow text-gray-700 font-medium hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
-                    <i class="fas fa-filter"></i> Filters & Sort
+            <div class="lg:hidden mb-6 w-full">
+                <button id="mobileFilterToggle" class="w-full flex items-center justify-center gap-3 bg-white py-4 px-6 rounded-xl border border-stone-200 shadow-sm text-stone-700 font-semibold hover:bg-stone-50 active:scale-[0.98] transition-all">
+                    <i class="fas fa-sliders-h text-emerald-600"></i>
+                    <span>Filter & Sort</span>
                 </button>
             </div>
 
@@ -259,10 +267,13 @@
             <div id="filterSidebar" class="mobile-filter-drawer lg:static lg:block lg:w-1/4 lg:h-auto lg:bg-transparent lg:shadow-none lg:transform-none lg:z-auto">
                 <div class="bg-white lg:rounded-xl lg:shadow p-5 sticky top-6 filter-section h-full lg:h-auto overflow-y-auto lg:overflow-visible">
                     <!-- Mobile Header -->
-                    <div class="flex justify-between items-center mb-5 lg:hidden pb-4 border-b">
-                        <h3 class="text-xl font-bold text-gray-800">Filters</h3>
-                        <button id="closeMobileFilter" class="p-2 text-gray-500 hover:text-gray-700">
-                            <i class="fas fa-times text-xl"></i>
+                    <div class="flex justify-between items-center mb-6 lg:hidden pb-4 border-b border-stone-100">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-sliders-h text-emerald-600"></i>
+                            <h3 class="text-xl font-bold text-stone-800">Filter & Sort</h3>
+                        </div>
+                        <button id="closeMobileFilter" class="w-10 h-10 flex items-center justify-center rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors">
+                            <i class="fas fa-times text-lg"></i>
                         </button>
                     </div>
 
@@ -280,13 +291,13 @@
                                 'is_new',
                                 'is_bestseller',
                             ]))
-                            <a href="{{ route('customer.products.list') }}"
+                            <a href="{{ url()->current() }}"
                                 class="text-sm text-emerald-700 hover:text-emerald-800">Clear All</a>
                         @endif
                     </div>
 
                     <!-- Main Filter Form -->
-                    <form id="filterForm" method="GET" action="{{ route('customer.products.list') }}">
+                    <form id="filterForm" method="GET" action="{{ url()->current() }}">
                         <!-- Search Form -->
                         <div class="mb-5 relative">
                             <input type="text" name="search" value="{{ $search ?? '' }}"
@@ -297,7 +308,7 @@
 
                     <!-- Categories -->
                     @if (isset($filters['categories']) && count($filters['categories']) > 0)
-                        <div class="mb-5">
+                        <div id="filter-categories" class="mb-5">
                             <h4 class="font-semibold text-gray-800 mb-3">Categories</h4>
                             <div class="space-y-2 max-h-60 overflow-y-auto">
                                 @foreach ($filters['categories'] as $category)
@@ -318,7 +329,7 @@
                     @endif
 
                     <!-- Price Range -->
-                    <div class="mb-5">
+                    <div id="filter-price" class="mb-5">
                         <h4 class="font-semibold text-gray-800 mb-3">Price Range</h4>
                         <div class="space-y-4">
                             <div class="flex justify-between text-sm text-gray-600">
@@ -342,7 +353,7 @@
 
                     <!-- Brand Filter -->
                     @if (isset($filters['brands']) && count($filters['brands']) > 0)
-                        <div class="mb-5">
+                        <div id="filter-brands" class="mb-5">
                             <h4 class="font-semibold text-gray-800 mb-3">Brands</h4>
                             <div class="space-y-2 max-h-60 overflow-y-auto">
                                 @foreach ($filters['brands'] as $brand)
@@ -362,36 +373,61 @@
                         </div>
                     @endif
 
-                    <!-- Availability -->
-                    <div class="mb-5">
-                        <h4 class="font-semibold text-gray-800 mb-3">Availability</h4>
-                        <label class="flex items-center p-2 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors">
-                            <input type="checkbox" name="in_stock" value="1" class="h-4 w-4 text-emerald-600 rounded"
-                                {{ ($inStock ?? false) ? 'checked' : '' }} onchange="this.form.submit()">
-                            <span class="text-gray-700 ml-3">In Stock Only</span>
-                        </label>
-                    </div>
+                        <!-- Availability -->
+                        <div id="filter-availability" class="mb-5">
+                            <h4 class="font-semibold text-gray-800 mb-3">Availability</h4>
+                            <label class="flex items-center p-2 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors">
+                                <input type="checkbox" name="in_stock" value="1" class="h-4 w-4 text-emerald-600 rounded"
+                                    {{ ($inStock ?? false) ? 'checked' : '' }} onchange="this.form.submit()">
+                                <span class="text-gray-700 ml-3">In Stock Only</span>
+                            </label>
+                        </div>
 
+                        <!-- Mobile Sort Section -->
+                        <div id="mobile-sort-section" class="mb-5 lg:hidden">
+                            <h4 class="font-semibold text-gray-800 mb-3">Sort By</h4>
+                            <div class="space-y-2">
+                                @php
+                                    $sortOptions = [
+                                        'newest' => 'Newest First',
+                                        'price_asc' => 'Price: Low to High',
+                                        'price_desc' => 'Price: High to Low',
+                                        'popular' => 'Most Popular',
+                                        'name_asc' => 'Name: A to Z',
+                                        'name_desc' => 'Name: Z to A'
+                                    ];
+                                @endphp
+                                @foreach($sortOptions as $value => $label)
+                                    <label class="flex items-center p-2 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors">
+                                        <input type="radio" name="sort_by" value="{{ $value }}" 
+                                            class="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                                            {{ ($sortBy ?? 'newest') == $value ? 'checked' : '' }}
+                                            onchange="this.form.submit()">
+                                        <span class="text-gray-700 ml-3">{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
                     </form>
                     <!-- End Main Filter Form -->
 
                     <!-- Special Filters -->
-                    <div class="space-y-3">
+                    <div id="filter-special" class="space-y-3">
                         <h4 class="font-semibold text-gray-800 mb-2">Special Collections</h4>
                         <div class="grid grid-cols-2 gap-2">
-                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_featured' => 1])) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['is_featured' => 1]) }}"
                                 class="text-center py-2 px-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm">
                                 <i class="fas fa-star mr-1"></i> Featured
                             </a>
-                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_new' => 1])) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['is_new' => 1]) }}"
                                 class="text-center py-2 px-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm">
                                 <i class="fas fa-bolt mr-1"></i> New arrivals
                             </a>
-                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['is_bestseller' => 1])) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['is_bestseller' => 1]) }}"
                                 class="text-center py-2 px-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm">
                                 <i class="fas fa-fire mr-1"></i> Best sellers
                             </a>
-                            <a href="{{ route('customer.products.list', array_merge(request()->query(), ['has_discount' => 1])) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['has_discount' => 1]) }}"
                                 class="text-center py-2 px-3 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 text-sm">
                                 <i class="fas fa-tag mr-1"></i> On Sale
                             </a>
@@ -399,9 +435,9 @@
                     </div>
 
                     <!-- Mobile Apply Button (Bottom Sticky) -->
-                    <div class="lg:hidden mt-6 pt-4 border-t sticky bottom-0 bg-white">
-                        <button onclick="document.getElementById('mobileFilterOverlay').click()" class="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold shadow-lg hover:bg-emerald-700">
-                            View Results
+                    <div class="lg:hidden mt-8 pt-6 border-t border-stone-100 sticky bottom-0 bg-white">
+                        <button onclick="toggleMobileFilters(false)" class="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 active:scale-[0.98] transition-all">
+                            Show Results
                         </button>
                     </div>
                 </div>
@@ -428,9 +464,9 @@
                         @endif
                     </div>
 
-                    <div class="flex items-center gap-4">
+                    <div class="hidden lg:flex items-center gap-4">
                         <!-- Sort Form -->
-                        <form method="GET" action="{{ route('customer.products.list') }}">
+                        <form method="GET" action="{{ url()->current() }}">
                             @foreach (request()->except('sort_by', 'page') as $key => $value)
                                 @if (is_array($value))
                                     @foreach ($value as $val)
@@ -536,13 +572,20 @@
 
                                     <!-- Action Buttons -->
                                     <div class="action-buttons">
+                                        @php
+                                            $variantId = $product['default_variant_id'] ?? $product['id'];
+                                            $isInCart = in_array($variantId, $cartVariantIds ?? []);
+                                        @endphp
                                         <button type="button"
                                             class="btn-add-to-cart add-to-cart-btn"
                                             data-product-id="{{ $product['id'] }}"
-                                            data-variant-id="{{ $product['default_variant_id'] ?? $product['id'] }}"
-                                            {{ !($product['is_in_stock'] ?? true) ? 'disabled' : '' }}>
-                                            <i class="fas fa-shopping-cart mr-2"></i>
-                                            Add to Cart
+                                            data-variant-id="{{ $variantId }}"
+                                            {{ (!($product['is_in_stock'] ?? true) || $isInCart) ? 'disabled' : '' }}>
+                                            @if($isInCart)
+                                                <i class="fas fa-check mr-2"></i> Added
+                                            @else
+                                                <i class="fas fa-shopping-cart mr-2"></i> Add to Cart
+                                            @endif
                                         </button>
                                         <button onclick="addToWishlist({{ $product['id'] }}, {{ $product['default_variant_id'] ?? $product['id'] }})"
                                             class="btn-wishlist wishlist-btn"
@@ -563,7 +606,7 @@
                                 <nav class="flex items-center gap-1">
                                     <!-- Previous Page -->
                                     @if ($paginator['current_page'] > 1)
-                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $paginator['current_page'] - 1])) }}"
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $paginator['current_page'] - 1]) }}"
                                             class="w-10 h-10 flex items-center justify-center rounded-lg text-gray-600 hover:bg-emerald-50 hover:text-emerald-700">
                                             <i class="fas fa-chevron-left"></i>
                                         </a>
@@ -576,7 +619,7 @@
                                     @endphp
 
                                     @for ($i = $start; $i <= $end; $i++)
-                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $i])) }}"
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $i]) }}"
                                             class="w-10 h-10 flex items-center justify-center rounded-lg
                                                 {{ $i == $paginator['current_page'] ? 'bg-emerald-600 text-white' : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-700' }}">
                                             {{ $i }}
@@ -585,7 +628,7 @@
 
                                     <!-- Next Page -->
                                     @if ($paginator['current_page'] < $paginator['last_page'])
-                                        <a href="{{ route('customer.products.list', array_merge(request()->query(), ['page' => $paginator['current_page'] + 1])) }}"
+                                        <a href="{{ request()->fullUrlWithQuery(['page' => $paginator['current_page'] + 1]) }}"
                                             class="w-10 h-10 flex items-center justify-center rounded-lg text-gray-600 hover:bg-emerald-50 hover:text-emerald-700">
                                             <i class="fas fa-chevron-right"></i>
                                         </a>
@@ -600,7 +643,7 @@
                         <i class="fas fa-search text-gray-300 text-5xl mb-4"></i>
                         <h3 class="text-xl font-semibold text-gray-700 mb-2">No Products Found</h3>
                         <p class="text-gray-600 mb-6">Try adjusting your filters or search terms</p>
-                        <a href="{{ route('customer.products.list') }}"
+                        <a href="{{ url()->current() }}"
                             class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
                             Reset All Filters
                         </a>
@@ -654,13 +697,22 @@
         }
 
         // Mobile Filter Logic
-        function toggleMobileFilters(show) {
+        function toggleMobileFilters(show, targetId = null) {
             const sidebar = document.getElementById('filterSidebar');
             const overlay = document.getElementById('mobileFilterOverlay');
             if (show) {
                 sidebar.classList.add('open');
                 overlay.classList.add('open');
                 document.body.style.overflow = 'hidden';
+
+                if (targetId) {
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        setTimeout(() => {
+                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                    }
+                }
             } else {
                 sidebar.classList.remove('open');
                 overlay.classList.remove('open');
@@ -691,6 +743,8 @@
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Adding...';
                     btn.disabled = true;
 
+                    let isSuccess = false;
+
                     try {
                         const response = await axios.post('/cart/add', {
                             variant_id: variantId,
@@ -700,6 +754,11 @@
                         if (response.data.success) {
                             showToast('Product added to cart successfully!', 'success');
                             updateCartCount(response.data.cart_count || 0);
+                            
+                            // Success state
+                            isSuccess = true;
+                            btn.innerHTML = '<i class="fas fa-check mr-2"></i> Added';
+                            btn.disabled = true;
                         } else {
                             showToast(response.data.message || 'Failed to add to cart', 'error');
                         }
@@ -707,8 +766,10 @@
                         console.error('Add to cart error:', error);
                         showToast('An error occurred. Please try again.', 'error');
                     } finally {
-                        btn.innerHTML = originalText;
-                        btn.disabled = false;
+                        if (!isSuccess) {
+                            btn.innerHTML = originalText;
+                            btn.disabled = false;
+                        }
                     }
                 });
             });

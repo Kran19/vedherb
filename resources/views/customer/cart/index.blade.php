@@ -92,8 +92,8 @@
             <!-- Cart Items List -->
             <div class="bg-white rounded-xl sm:rounded-2xl border border-stone-200 divide-y divide-stone-100 overflow-hidden" id="cart-items-container">
                 @forelse($cart['items'] ?? [] as $item)
-                    <div class="p-4 sm:p-6 cart-item-transition" id="cart-item-{{ $item['id'] }}">
-                        <div class="flex gap-4 sm:gap-6">
+                    <div class="p-4 sm:p-6 cart-item-transition overflow-hidden" id="cart-item-{{ $item['id'] }}">
+                        <div class="flex gap-4 sm:gap-6 min-w-0">
                             <!-- Product Image -->
                             <div class="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg sm:rounded-xl bg-[#F0EFEC] flex items-center justify-center p-2 sm:p-3 flex-shrink-0">
                                 <img src="{{ !empty($item['image']) ? asset('storage/' . $item['image']) : asset('assets/images/placeholder.png') }}" 
@@ -105,7 +105,8 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0">
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="font-medium text-stone-900 text-sm sm:text-base truncate">{{ $item['product_name'] }}</h3>
+                                        <h3 class="font-medium text-stone-900 text-sm sm:text-base break-words">
+{{ $item['product_name'] }}</h3>
                                         <p class="text-xs text-stone-500 mb-2">{{ $item['sku'] ?? 'N/A' }}</p>
                                         @if(!empty($item['attributes']))
                                             <div class="flex flex-wrap gap-1 sm:gap-2 mb-3">
@@ -123,7 +124,7 @@
                                 </div>
                                 
                                 <!-- Quantity Controls -->
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between mt-3 sm:mt-4 gap-3 sm:gap-0">
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-3 sm:mt-4 sm:gap-0">
                                     <div class="flex items-center gap-3">
                                         <div class="flex items-center border border-stone-300 rounded-lg overflow-hidden">
                                             <button onclick="changeQuantity('{{ $item['id'] }}', -1)" 
@@ -141,11 +142,11 @@
                                             </button>
                                         </div>
                                         <button onclick="removeCartItem('{{ $item['id'] }}')" class="text-xs sm:text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
-                                            <iconify-icon icon="lucide:trash-2" width="12" class="sm:w-3.5"></iconify-icon>
+                                            <iconify-icon icon="lucide:trash-2" width="14" class="sm:w-3.5"></iconify-icon>
                                             Remove
                                         </button>
                                     </div>
-                                    <div class="text-right">
+                                    <div class="text-left sm:text-right">
                                         <p class="text-base sm:text-lg font-bold text-stone-900" id="subtotal-{{ $item['id'] }}">₹{{ number_format($item['total'], 2) }}</p>
                                     </div>
                                 </div>

@@ -115,7 +115,7 @@
                         </label>
                         <div class="relative">
                             <iconify-icon icon="lucide:phone" width="16" class="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-stone-400"></iconify-icon>
-                            <input type="tel" name="mobile" required value="{{ old('mobile') }}"
+                            <input type="tel" name="mobile" required value="{{ old('mobile') }}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
                                    class="w-full bg-stone-50 border border-stone-300 rounded-lg sm:rounded-xl pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 @error('mobile') border-red-500 @enderror"
                                    placeholder="9876543210">
                         </div>

@@ -2,7 +2,7 @@
 
 @section('title', 'My Wishlist - ' . config('app.name'))
 
-@section('styles')
+@push('styles')
     <style>
         .wishlist-item {
             transition: all 0.3s ease;
@@ -50,7 +50,7 @@
             background: #fef3c7;
         }
     </style>
-@endsection
+@endpush
 
 @section('content')
     <div class="max-w-7xl mx-auto px-4 py-8">
@@ -611,17 +611,17 @@
 
             const notification = document.createElement('div');
             notification.className = `custom-notification fixed top-4 right-4 px-6 py-3 rounded-full shadow-lg z-50 animate-slide-in ${type === 'success' ? 'bg-green-100 text-green-800' :
-                    type === 'error' ? 'bg-red-100 text-red-800' :
-                        type === 'warning' ? 'bg-amber-100 text-amber-800' :
-                            'bg-blue-100 text-blue-800'
+                type === 'error' ? 'bg-red-100 text-red-800' :
+                    type === 'warning' ? 'bg-amber-100 text-amber-800' :
+                        'bg-blue-100 text-blue-800'
                 }`;
             notification.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' :
+                <i class="fas fa-${type === 'success' ? 'check-circle' :
                     type === 'error' ? 'exclamation-circle' :
                         type === 'warning' ? 'exclamation-triangle' :
                             'info-circle'} mr-2"></i>
-            ${message}
-        `;
+                ${message}
+            `;
 
             document.body.appendChild(notification);
 

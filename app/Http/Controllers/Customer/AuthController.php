@@ -38,12 +38,10 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'mobile' => 'required|numeric|digits:10',
+            'mobile' => ['required', new \App\Rules\IndianMobileNumber],
             'password' => 'required|min:8'
         ], [
             'mobile.required' => 'Mobile number is required',
-            'mobile.numeric' => 'Mobile number must be numeric',
-            'mobile.digits' => 'Mobile number must be 10 digits',
             'password.required' => 'Password is required',
             'password.min' => 'Password must be at least 8 characters'
         ]);
@@ -111,7 +109,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100|regex:/^[a-zA-Z\s]+$/',
             'email' => 'required|email|max:150|unique:customers,email',
-            'mobile' => 'required|string|max:20|unique:customers,mobile|regex:/^[0-9]{10,15}$/',
+            'mobile' => ['required', 'string', 'unique:customers,mobile', new \App\Rules\IndianMobileNumber],
             'password' => [
                 'required',
                 'min:8',
@@ -126,7 +124,6 @@ class AuthController extends Controller
             'email.email' => 'Please enter a valid email address',
             'email.unique' => 'This email is already registered',
             'mobile.required' => 'Mobile number is required',
-            'mobile.regex' => 'Please enter a valid 10-15 digit mobile number',
             'mobile.unique' => 'This mobile number is already registered',
             'password.required' => 'Password is required',
             'password.min' => 'Password must be at least 8 characters',
@@ -407,11 +404,9 @@ class AuthController extends Controller
     public function changeMobile(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'mobile' => 'required|numeric|digits:10|unique:customers,mobile'
+            'mobile' => ['required', 'unique:customers,mobile', new \App\Rules\IndianMobileNumber]
         ], [
             'mobile.required' => 'Mobile number is required',
-            'mobile.numeric' => 'Mobile number must be numeric',
-            'mobile.digits' => 'Mobile number must be 10 digits',
             'mobile.unique' => 'This mobile number is already registered'
         ]);
 
@@ -458,5 +453,138 @@ class AuthController extends Controller
         Auth::guard('customer')->logout();
         return redirect()->route('customer.home.index')
             ->with('success', 'Logged out successfully.');
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | PASSWORD RESET (SMS OTP)
+    |--------------------------------------------------------------------------
+    */
+    public function sendResetOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'mobile' => ['required', 'exists:customers,mobile', new \App\Rules\IndianMobileNumber],
+        ], [
+            'mobile.exists' => 'No account found with this mobile number.',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $mobile = $request->mobile;
+
+        // Generate OTP
+        $otp = rand(100000, 999999);
+
+        // Store in Cache (valid for 5 mins)
+        Cache::put('reset_otp_' . $mobile, $otp, 300);
+
+        // Also store in session for the next step UI
+        session(['mobile' => $mobile]);
+
+        // Send SMS
+        try {
+            $this->smsService->sendOtp($mobile, $otp);
+        } catch (\Exception $e) {
+            \Log::error('Password Reset OTP failed: ' . $e->getMessage());
+            // For dev/testing if SMS fails, we might still want to proceed or show error
+            // keeping it silent for user but logging it
+        }
+
+        return redirect()->route('customer.forgot-password.verify')
+            ->with('success', 'OTP sent to your mobile number.');
+    }
+
+    public function showVerifyResetOtp()
+    {
+        if (!session('mobile')) {
+            return redirect()->route('customer.forgot-password');
+        }
+        return view('customer.auth.verify-reset-otp');
+    }
+
+    public function verifyResetOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'otp' => 'required|numeric|digits:6',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator);
+        }
+
+        $mobile = session('mobile');
+        if (!$mobile) {
+            return redirect()->route('customer.forgot-password')
+                ->with('error', 'Session expired. Please try again.');
+        }
+
+        $cachedOtp = Cache::get('reset_otp_' . $mobile);
+
+        if (!$cachedOtp || $cachedOtp != $request->otp) {
+            return redirect()->back()->withErrors(['otp' => 'Invalid or expired OTP.']);
+        }
+
+        // OTP Verified
+        Cache::forget('reset_otp_' . $mobile);
+
+        // Set a secure flag for the next step
+        session(['reset_verified_mobile' => $mobile]);
+
+        return redirect()->route('customer.reset-password');
+    }
+
+    public function showResetPassword()
+    {
+        if (!session('reset_verified_mobile')) {
+            return redirect()->route('customer.forgot-password')
+                ->with('error', 'Please verify OTP first.');
+        }
+        return view('customer.auth.reset-password');
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $mobile = session('reset_verified_mobile');
+
+        if (!$mobile) {
+            return redirect()->route('customer.forgot-password')
+                ->with('error', 'Session expired. Please start over.');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'password' => [
+                'required',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+            ],
+        ], [
+            'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator);
+        }
+
+        // Update Password
+        $customer = Customer::where('mobile', $mobile)->first();
+
+        if ($customer) {
+            $customer->password = Hash::make($request->password);
+            $customer->password_changed_at = now();
+            $customer->save();
+
+            // Clean up session
+            session()->forget(['mobile', 'reset_verified_mobile', 'otp']);
+
+            return redirect()->route('customer.login')
+                ->with('success', 'Password reset successful! Please login with your new password.');
+        }
+
+        return redirect()->route('customer.forgot-password')
+            ->with('error', 'Account not found.');
     }
 }

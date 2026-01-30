@@ -1082,6 +1082,8 @@
         const productData = @json($product);
         const availableVariants = @json($product['variants'] ?? []);
         const attributeGroups = @json($product['attribute_groups'] ?? []);
+        let cartVariantIds = @json($cartVariantIds ?? []);
+        let wishlistVariantIds = @json($wishlistVariantIds ?? []);
 
         // State
         let selectedAttributes = {};
@@ -1147,7 +1149,11 @@
                 const stockCount = document.getElementById('stockCount');
                 if (stockCount) stockCount.textContent = 'Not available for this selection';
                 const cartBtn = document.getElementById('add-to-cart-btn');
-                if (cartBtn) cartBtn.disabled = true;
+                if (cartBtn) {
+                    cartBtn.disabled = true;
+                    const btnText = cartBtn.querySelector('.btn-text');
+                    if (btnText) btnText.textContent = 'Unavailable';
+                }
             }
         }
 
@@ -1188,9 +1194,46 @@
             // Update Add to Cart button
             const cartBtn = document.getElementById('add-to-cart-btn');
             if (cartBtn) {
-                cartBtn.disabled = !(variant.stock_quantity > 0);
+                const btnText = cartBtn.querySelector('.btn-text');
+                const isInCart = cartVariantIds.includes(variant.id); // Check if variant ID is in array based on type
+
+                if (isInCart) {
+                    cartBtn.disabled = true;
+                    if (btnText) btnText.textContent = 'Added to Cart';
+                    cartBtn.classList.add('bg-emerald-800', 'opacity-70', 'cursor-not-allowed');
+                } else {
+                    cartBtn.disabled = !(variant.stock_quantity > 0);
+                    if (btnText) btnText.textContent = (variant.stock_quantity > 0) ? 'Add to Cart' : 'Out of Stock';
+                    cartBtn.classList.remove('bg-emerald-800', 'opacity-70', 'cursor-not-allowed');
+                }
+
                 cartBtn.setAttribute('data-variant-id', variant.id);
             }
+
+            // Update Wishlist button
+            const wishlistBtn = document.getElementById('wishlist-btn');
+            if (wishlistBtn) {
+                const isInWishlist = wishlistVariantIds.includes(variant.id);
+                const heartIcon = wishlistBtn.querySelector('.heart-icon');
+                const wishlistText = wishlistBtn.querySelector('.wishlist-text');
+
+                if (isInWishlist) {
+                    wishlistBtn.classList.add('active');
+                    if (heartIcon) {
+                        heartIcon.style.color = '#dc2626';
+                        heartIcon.style.fill = '#dc2626';
+                    }
+                    if (wishlistText) wishlistText.textContent = 'Saved to Wishlist';
+                } else {
+                    wishlistBtn.classList.remove('active');
+                    if (heartIcon) {
+                        heartIcon.style.color = '';
+                        heartIcon.style.fill = 'none';
+                    }
+                    if (wishlistText) wishlistText.textContent = 'Save to Wishlist';
+                }
+            }
+
 
             // Update image if variant has one
             if (variant.images && variant.images.length > 0) {
@@ -1202,9 +1245,6 @@
                     if (mainImg) {
                         mainImg.src = `{{ asset('storage/') }}/${primaryImg.url}`;
                     }
-
-                    // Also filter gallery to show only variant images? 
-                    // For now, let's keep all images but ensure the main image updates.
                 }
             } else if (variant.main_image) {
                 const mainImg = document.getElementById('main-product-image');
@@ -1268,6 +1308,13 @@
 
                 if (response.data.success) {
                     showToast('Success', 'Added to cart successfully!', 'success');
+                    // Add to local array
+                    if (!cartVariantIds.includes(selectedVariant.id)) {
+                        cartVariantIds.push(selectedVariant.id);
+                    }
+                    // Update UI immediately
+                    updateVariantUI(selectedVariant);
+
                     // Update cart count in header if the function exists
                     if (typeof window.updateCartBadge === 'function') {
                         window.updateCartBadge(response.data.cart_count);
@@ -1277,7 +1324,7 @@
                 console.error('Cart Error:', error);
                 const msg = error.response?.data?.message || 'Failed to add to cart';
                 showToast('Error', msg, 'error');
-            } finally {
+                // Revert button if failed
                 btn.disabled = false;
                 if (btnText) btnText.textContent = originalText;
             }
@@ -1294,11 +1341,14 @@
 
                 if (response.data.success) {
                     showToast('Success', 'Added to wishlist!', 'success');
-                    const heartIcon = document.querySelector('.wishlist-btn .heart-icon');
-                    if (heartIcon) {
-                        heartIcon.style.color = '#dc2626';
-                        heartIcon.style.fill = '#dc2626';
+
+                    if (!wishlistVariantIds.includes(variantId)) {
+                        wishlistVariantIds.push(variantId);
                     }
+
+                    const heartIcon = document.querySelector('.wishlist-btn .heart-icon');
+                    // Update UI
+                    updateVariantUI(selectedVariant);
                 }
             } catch (error) {
                 console.error('Wishlist Error:', error);
@@ -1392,15 +1442,15 @@
             const icon = type === 'success' ? 'lucide:check-circle' : (type === 'error' ? 'lucide:alert-circle' : 'lucide:info');
 
             toast.innerHTML = `
-                                    <iconify-icon icon="${icon}" width="20"></iconify-icon>
-                                    <div class="flex-1">
-                                        <p class="font-bold text-sm">${title}</p>
-                                        <p class="text-xs opacity-90">${message}</p>
-                                    </div>
-                                    <button class="opacity-70 hover:opacity-100" onclick="this.parentElement.remove()">
-                                        <iconify-icon icon="lucide:x" width="16"></iconify-icon>
-                                    </button>
-                                `;
+                                        <iconify-icon icon="${icon}" width="20"></iconify-icon>
+                                        <div class="flex-1">
+                                            <p class="font-bold text-sm">${title}</p>
+                                            <p class="text-xs opacity-90">${message}</p>
+                                        </div>
+                                        <button class="opacity-70 hover:opacity-100" onclick="this.parentElement.remove()">
+                                            <iconify-icon icon="lucide:x" width="16"></iconify-icon>
+                                        </button>
+                                    `;
 
             container.appendChild(toast);
 
