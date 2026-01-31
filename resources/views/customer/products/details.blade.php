@@ -651,7 +651,7 @@
                     </button>
                     <button
                         class="tab-btn py-3 sm:py-4 px-1 text-stone-500 hover:text-stone-700 font-medium text-xs sm:text-sm whitespace-nowrap"
-                        data-tab="reviews" id="reviews-tab">
+                        data-tab="reviews">
                         Reviews ({{ count($reviews ?? []) }})
                     </button>
                 </nav>
@@ -1371,16 +1371,26 @@
 
                     // Update buttons
                     buttons.forEach(b => {
-                        b.classList.remove('border-emerald-900', 'text-emerald-900');
+                        b.classList.remove('border-b-2', 'border-emerald-900', 'text-emerald-900');
                         b.classList.add('text-stone-500');
                     });
-                    btn.classList.add('border-emerald-900', 'text-emerald-900');
+                    btn.classList.add('border-b-2', 'border-emerald-900', 'text-emerald-900');
                     btn.classList.remove('text-stone-500');
 
                     // Update panes
-                    panes.forEach(p => p.classList.add('hidden'));
+                    panes.forEach(p => {
+                        p.classList.remove('active');
+                        p.classList.add('hidden');
+                    });
+
                     const targetPane = document.getElementById(`${tabName}-tab`);
-                    if (targetPane) targetPane.classList.remove('hidden');
+                    if (targetPane) {
+                        targetPane.classList.remove('hidden');
+                        // Small delay to allow display:block to apply before opacity transition
+                        requestAnimationFrame(() => {
+                            targetPane.classList.add('active');
+                        });
+                    }
                 });
             });
         }
@@ -1442,15 +1452,15 @@
             const icon = type === 'success' ? 'lucide:check-circle' : (type === 'error' ? 'lucide:alert-circle' : 'lucide:info');
 
             toast.innerHTML = `
-                                        <iconify-icon icon="${icon}" width="20"></iconify-icon>
-                                        <div class="flex-1">
-                                            <p class="font-bold text-sm">${title}</p>
-                                            <p class="text-xs opacity-90">${message}</p>
-                                        </div>
-                                        <button class="opacity-70 hover:opacity-100" onclick="this.parentElement.remove()">
-                                            <iconify-icon icon="lucide:x" width="16"></iconify-icon>
-                                        </button>
-                                    `;
+                                                <iconify-icon icon="${icon}" width="20"></iconify-icon>
+                                                <div class="flex-1">
+                                                    <p class="font-bold text-sm">${title}</p>
+                                                    <p class="text-xs opacity-90">${message}</p>
+                                                </div>
+                                                <button class="opacity-70 hover:opacity-100" onclick="this.parentElement.remove()">
+                                                    <iconify-icon icon="lucide:x" width="16"></iconify-icon>
+                                                </button>
+                                            `;
 
             container.appendChild(toast);
 

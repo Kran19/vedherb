@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - eCommerce Admin Panel</title>
+    <title>Login - {{ ($adminSettings['store_name'] ?? 'Ved Herbs') }} Admin</title>
 
     <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,12 +18,18 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+        :root {
+            --theme-color:
+                {{ $adminSettings['theme_color'] ?? '#065f46' }}
+            ;
+        }
+
         * {
             font-family: 'Inter', sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--theme-color);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -38,7 +44,7 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--theme-color);
             color: white;
             padding: 12px 24px;
             border-radius: 10px;
@@ -46,8 +52,17 @@
         }
 
         .btn-primary:hover {
-            box-shadow: 0 10px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
             transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .theme-text {
+            color: var(--theme-color);
+        }
+
+        .theme-bg {
+            background-color: var(--theme-color);
         }
     </style>
 </head>
@@ -56,13 +71,11 @@
     <div class="glass rounded-2xl shadow-2xl overflow-hidden max-w-md w-full">
         <!-- Logo Header -->
         <div class="p-8 text-center border-b border-gray-100">
-            <div
-                class="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div class="w-20 h-20 theme-bg rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <i class="fas fa-store text-white text-3xl"></i>
             </div>
-            <h1
-                class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                eCommerce Admin
+            <h1 class="text-3xl font-bold theme-text mb-2">
+                {{ $adminSettings['store_name'] ?? 'Ved Herbs' }} Admin
             </h1>
             <p class="text-gray-600">Sign in to your admin dashboard</p>
         </div>
@@ -100,10 +113,9 @@
 
                 {{-- <div class="flex items-center justify-between mb-8">
                     <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" 
-                               name="remember" 
-                               class="w-5 h-5 border-2 border-gray-300 rounded checked:bg-indigo-500 checked:border-indigo-500 mr-2"
-                               id="remember">
+                        <input type="checkbox" name="remember"
+                            class="w-5 h-5 border-2 border-gray-300 rounded checked:bg-indigo-500 checked:border-indigo-500 mr-2"
+                            id="remember">
                         <span class="text-sm text-gray-600">Remember me</span>
                     </label>
                 </div> --}}
@@ -119,7 +131,7 @@
         <!-- Footer -->
         <div class="px-8 py-4 bg-gray-50 border-t border-gray-100 text-center">
             <p class="text-sm text-gray-600">
-                © {{ date('Y') }} eCommerce Admin Panel
+                © {{ date('Y') }} Ved Herbs Admin Panel
             </p>
         </div>
     </div>

@@ -42,7 +42,7 @@ class HomeController extends Controller
                     $products = $this->productService->getProducts(
                         [
                             'category_id' => $section->category_id,
-                            'sort_by'     => 'featured',
+                            'sort_by' => 'featured',
                         ],
                         12,
                         1
@@ -61,8 +61,34 @@ class HomeController extends Controller
                     'title' => $section->title,
                     'subtitle' => $section->subtitle,
                     'style' => $section->style,
-                    'products' => collect($products)->filter(fn ($p) => is_array($p) && isset($p['id']))->values()->toArray()
+                    'products' => collect($products)->filter(fn($p) => is_array($p) && isset($p['id']))->values()->toArray()
                 ];
+            }
+
+            // Fallback: If no sections found or no products in sections, load New Arrivals
+            $hasProducts = false;
+            foreach ($dynamicSections as $ds) {
+                if (!empty($ds['products'])) {
+                    $hasProducts = true;
+                    break;
+                }
+            }
+
+            if (!$hasProducts) {
+                $fallbackProducts = $this->productService->getProducts(
+                    ['sort_by' => 'newest', 'in_stock' => true],
+                    12,
+                    1
+                )->items();
+
+                if (!empty($fallbackProducts)) {
+                    $dynamicSections[] = [
+                        'title' => 'New Arrivals',
+                        'subtitle' => 'Latest additions to our collection',
+                        'style' => 'grid',
+                        'products' => collect($fallbackProducts)->filter(fn($p) => is_array($p) && isset($p['id']))->values()->toArray()
+                    ];
+                }
             }
 
             /* ------------------------------
@@ -78,9 +104,9 @@ class HomeController extends Controller
              |------------------------------*/
             $stats = [
                 'customer_count' => Customer::where('status', 1)->count(),
-                'product_count'  => Product::where('status', 'active')->count(),
-                'order_count'    => Order::where('status', 'delivered')->count(),
-                'review_count'   => 98,
+                'product_count' => Product::where('status', 'active')->count(),
+                'order_count' => Order::where('status', 'delivered')->count(),
+                'review_count' => 98,
             ];
 
             return view('customer.home.index', compact(

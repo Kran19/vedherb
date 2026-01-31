@@ -338,6 +338,13 @@ Route::name('customer.')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | NEWSLETTER
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/newsletter/subscribe', [App\Http\Controllers\Customer\NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
+
+    /*
+    |--------------------------------------------------------------------------
     | CUSTOMER AUTH
     |--------------------------------------------------------------------------
     */
@@ -348,6 +355,7 @@ Route::name('customer.')->group(function () {
     Route::post('/register', [CustomerAuth::class, 'register'])->name('register.submit');
 
     Route::get('/verify', [CustomerAuth::class, 'verifyPage'])->name('verify');
+    Route::get('/verify/edit-registration', [CustomerAuth::class, 'editRegistration'])->name('verify.edit-registration');
     Route::post('/verify', [CustomerAuth::class, 'verify'])->name('verify.submit');
     Route::post('/resend-otp', [CustomerAuth::class, 'resendOTP'])->name('otp.resend');
     Route::post('/change-mobile', [CustomerAuth::class, 'changeMobile'])->name('auth.change-mobile');
@@ -478,6 +486,7 @@ Route::name('customer.')->group(function () {
     Route::prefix('page')->group(function () {
         Route::get('/about', [CustomerPage::class, 'about'])->name('page.about');
         Route::get('/contact', [CustomerPage::class, 'contact'])->name('page.contact');
+        Route::post('/contact', [CustomerPage::class, 'contactSubmit'])->name('page.contact.submit');
         Route::get('/faq', [CustomerPage::class, 'faq'])->name('page.faq');
         Route::get('/terms', [CustomerPage::class, 'terms'])->name('page.terms');
         Route::get('/privacy-policy', [CustomerPage::class, 'privacy'])->name('page.privacy');

@@ -7,7 +7,10 @@
 
         <!-- Logo -->
         <a href="{{ route('customer.home.index') }}" style="display: flex; align-items: center; margin-left: 1rem;">
-            <img src="{{ asset('assets/images/logo.png') }}" alt="VED HERBS & AYURVEDA"
+            @php
+                $headerLogo = \App\Helpers\SettingsHelper::get('logo_url', asset('assets/images/logo.png'));
+            @endphp
+            <img src="{{ $headerLogo }}" alt="{{ \App\Helpers\SettingsHelper::get('store_name', 'Ved Herbs') }}"
                 style="height: 64px; width: auto; object-fit: contain;" loading="eager" width="160" height="64">
         </a>
 
@@ -55,7 +58,7 @@
     <div
         style="display: flex; align-items: center; justify-content: space-between; padding: 1.5rem; border-bottom: 1px solid #e7e5e4;">
         <div style="display: flex; align-items: center;">
-            <img src="{{ asset('assets/images/logo.png') }}" alt="VED HERBS & AYURVEDA"
+            <img src="{{ $headerLogo }}" alt="{{ \App\Helpers\SettingsHelper::get('store_name', 'Ved Herbs') }}"
                 style="height: 48px; width: auto; object-fit: contain;" loading="eager" width="120" height="48">
         </div>
         <button id="mobile-menu-close" style="padding: 0.5rem; color: #57534e; transition: color 0.2s;"

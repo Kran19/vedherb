@@ -21,6 +21,10 @@ class SettingsHelper
 
             $value = $setting->value;
 
+            if (($value === null || $value === '') && $default !== null) {
+                return $default;
+            }
+
             if ($setting->is_encrypted && $value) {
                 $value = decrypt($value);
             }
@@ -72,6 +76,7 @@ class SettingsHelper
             foreach ($settings as $settingKey) {
                 Cache::forget("setting.{$settingKey}");
             }
+            Cache::forget('settings.public');
         }
     }
 
@@ -99,7 +104,11 @@ class SettingsHelper
     /**
      * Get setting value from model
      */
-    private static function getSettingValue(Setting $setting): mixed
+    /**
+     * Get setting value from model
+     * @param Setting|object $setting
+     */
+    private static function getSettingValue($setting): mixed
     {
         $value = $setting->value;
 
@@ -150,10 +159,10 @@ class SettingsHelper
     public static function storeInfo(): array
     {
         return [
-            'name' => self::get('store_name', 'Verve Jewels'),
-            'email' => self::get('store_email', 'contact@vervejewels.com'),
+            'name' => self::get('store_name', 'Ved Herbs & Ayurveda'),
+            'email' => self::get('store_email', 'contact@vedherbs.com'),
             'phone' => self::get('store_phone', '+91 98765 43210'),
-            'address' => self::get('store_address', 'Suite 405, Jaipur Jewelry Mart, MI Road, Jaipur, Rajasthan 302001, India'),
+            'address' => self::get('store_address', 'Ayurvedic Wellness Center, India'),
             'currency' => self::get('currency', 'INR'),
             'currency_symbol' => self::currencySymbol()
         ];
@@ -165,9 +174,9 @@ class SettingsHelper
     public static function seoSettings(): array
     {
         return [
-            'meta_title' => self::get('meta_title', 'Verve Jewels - Exquisite Indian Imitation & Fashion Jewelry'),
-            'meta_description' => self::get('meta_description', 'Discover stunning Indian imitation jewelry at Verve Jewels. From traditional Kundan sets to modern fashion jewelry, find the perfect piece for every occasion with fast delivery across India.'),
-            'meta_keywords' => self::get('meta_keywords', 'imitation jewelry, indian jewelry, kundan, polki, fashion accessories, wedding jewelry, online jewelry india'),
+            'meta_title' => self::get('meta_title', 'Ved Herbs - Authentic Ayurvedic Wellness'),
+            'meta_description' => self::get('meta_description', 'Discover authentic Ayurvedic wellness products by Ved Herbs. Natural remedies, immunity boosters, and holistic health solutions.'),
+            'meta_keywords' => self::get('meta_keywords', 'ayurveda, herbal products, natural wellness, immunity, ved herbs, holistic health'),
             'google_analytics' => self::get('google_analytics', '')
         ];
     }
@@ -194,6 +203,20 @@ class SettingsHelper
             'default_shipping_rate' => self::get('default_shipping_rate', 99.00),
             'tax_rate' => self::get('tax_rate', 3.0),
             'free_shipping_min' => self::get('free_shipping_min', 999.00)
+        ];
+    }
+
+    /**
+     * Get social media links
+     */
+    public static function socialLinks(): array
+    {
+        return [
+            'facebook' => self::get('social_facebook', ''),
+            'instagram' => self::get('social_instagram', ''),
+            'twitter' => self::get('social_twitter', ''),
+            'linkedin' => self::get('social_linkedin', ''),
+            'youtube' => self::get('social_youtube', '')
         ];
     }
 }

@@ -171,7 +171,7 @@
                     <i data-lucide="mail" class="w-4 h-4"></i>
                     Send Message
                 </a>
-                <a href="tel:+911234567890" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-emerald-800/50 backdrop-blur-sm text-white font-medium border border-emerald-700 hover:bg-emerald-700/50 transition-all hover:shadow-lg active:scale-[0.98]">
+                <a href="tel:{{ \App\Helpers\SettingsHelper::get('store_phone') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-emerald-800/50 backdrop-blur-sm text-white font-medium border border-emerald-700 hover:bg-emerald-700/50 transition-all hover:shadow-lg active:scale-[0.98]">
                     <i data-lucide="phone" class="w-4 h-4"></i>
                     Call Now
                 </a>
@@ -191,9 +191,8 @@
                 </div>
                 <h3 class="text-xl font-semibold text-stone-900 mb-3">Visit Our Center</h3>
                 <p class="text-stone-600 mb-4">
-                    Ved Herbs & Ayurveda Wellness Center<br>
-                    123 Ayurveda Marg, Near Ganga Ghat<br>
-                    Rishikesh, Uttarakhand 249201
+                    {{ \App\Helpers\SettingsHelper::get('store_name', 'Ved Herbs & Ayurveda') }}<br>
+                    {!! nl2br(e(\App\Helpers\SettingsHelper::get('store_address', 'Ayurvedic Wellness Center, India'))) !!}
                 </p>
                 <a href="#map" class="inline-flex items-center gap-2 text-emerald-700 font-medium text-sm hover:text-emerald-800">
                     <i data-lucide="navigation" class="w-4 h-4"></i>
@@ -206,16 +205,21 @@
                 <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 mb-6">
                     <i data-lucide="phone" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-xl font-semibold text-stone-900 mb-3">Call or WhatsApp</h3>
+                <h3 class="text-xl font-semibold text-stone-900 mb-3">Contact Us</h3>
                 <div class="space-y-3 mb-4">
-                    <a href="tel:+911234567890" class="block text-lg font-medium text-stone-900 hover:text-emerald-700">
-                        +91 12345 67890
+                    @php
+                        $phone = \App\Helpers\SettingsHelper::get('store_phone', '+91 98765 43210');
+                        $email = \App\Helpers\SettingsHelper::get('store_email', 'contact@vedherbs.com');
+                        $whatsappNumber = preg_replace('/[^0-9]/', '', $phone);
+                    @endphp
+                    <a href="tel:{{ $phone }}" class="block text-lg font-medium text-stone-900 hover:text-emerald-700">
+                        <i data-lucide="phone" class="w-4 h-4 inline mr-2 text-emerald-600"></i> {{ $phone }}
                     </a>
-                    <a href="tel:+911234567891" class="block text-lg font-medium text-stone-900 hover:text-emerald-700">
-                        +91 12345 67891
+                    <a href="mailto:{{ $email }}" class="block text-lg font-medium text-stone-900 hover:text-emerald-700">
+                        <i data-lucide="mail" class="w-4 h-4 inline mr-2 text-emerald-600"></i> {{ $email }}
                     </a>
                 </div>
-                <a href="https://wa.me/911234567890" target="_blank" 
+                <a href="https://wa.me/{{ $whatsappNumber }}" target="_blank" 
                    class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#25D366] text-white font-medium text-sm hover:bg-[#128C7E] transition-all whatsapp-pulse">
                     <i data-lucide="message-circle" class="w-4 h-4"></i>
                     Chat on WhatsApp
@@ -266,7 +270,7 @@
                         </p>
                     </div>
                     
-                    <form id="contactForm" class="space-y-6" method="POST">
+                    <form id="contactForm" class="space-y-6" method="POST" action="{{ route('customer.page.contact.submit') }}">
                         @csrf
                         <!-- Form Status Messages -->
                         <div id="form-status" class="hidden p-4 rounded-lg"></div>
@@ -499,7 +503,7 @@
                 <i data-lucide="shopping-bag" class="w-4 h-4"></i>
                 Shop Ayurvedic Products
             </a>
-            <a href="tel:+911234567890" 
+            <a href="tel:{{ \App\Helpers\SettingsHelper::get('store_phone') }}" 
                class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-emerald-800 text-white font-medium border border-emerald-700 hover:bg-emerald-700 transition-all hover:shadow-xl active:scale-[0.98]">
                 <i data-lucide="phone" class="w-4 h-4"></i>
                 Call for Consultation

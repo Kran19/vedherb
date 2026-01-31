@@ -27,12 +27,77 @@ class AuthController extends Controller
 
     public function registerPage()
     {
+        // If we have validation errors, it means a form submission failed, so show the form
+        if (session('errors')) {
+            return view('customer.auth.register');
+        }
+
+        // If explicitly allowing edit (coming from Change Mobile)
+        if (session('allow_edit')) {
+            return view('customer.auth.register');
+        }
+
+        // Check if user has a pending registration
+        if (session('verification_context') == 'register' && session('pending_mobile')) {
+            $mobile = session('pending_mobile');
+            $cacheKey = 'pending_register_' . $mobile;
+            $data = Cache::get($cacheKey);
+
+            // 1. If Cache Missing (Expired completely) -> Clear Session & Stay on Register
+            if (!$data) {
+                session()->forget(['pending_mobile', 'verification_context']);
+                return view('customer.auth.register');
+            }
+
+            // 2. If OTP Expired (Key exists but expires_at < now) -> Clear Session & Stay on Register
+            // Note: Cache TTL usually handles removal, but checking expires_at explicitly is safer if keys persist
+            if (isset($data['expires_at']) && $data['expires_at'] < now()->timestamp) {
+
+                // Cleanup cache to avoid confusion
+                Cache::forget($cacheKey);
+                Cache::forget('otp_' . $mobile);
+                Cache::forget('otp_expires_' . $mobile);
+
+                session()->forget(['pending_mobile', 'verification_context']);
+
+                return view('customer.auth.register');
+            }
+
+            // 3. If Valid -> Redirect to Verify
+            return redirect()->route('customer.verify');
+        }
+
         return view('customer.auth.register');
     }
 
     public function showForgotPassword()
     {
         return view('customer.auth.forgot-password');
+    }
+
+    public function editRegistration()
+    {
+        $mobile = session('pending_mobile');
+
+        // If we are in the pending registration flow
+        if ($mobile) {
+            $cacheKey = 'pending_register_' . $mobile;
+            $data = Cache::get($cacheKey);
+
+            if ($data) {
+                // DO NOT clear the pending state yet. 
+                // We keep it valid in case the user goes "Back" to verify the old number.
+                // It will be overwritten if they successfully register a new number.
+
+                // Redirect to register with old input and allow_edit flag
+                return redirect()->route('customer.register')
+                    ->withInput($data)
+                    ->with('allow_edit', true);
+            }
+        }
+
+        // Fallback catch-all
+        return redirect()->route('customer.register');
     }
 
     public function login(Request $request)
@@ -140,92 +205,97 @@ class AuthController extends Controller
                 ->with('form', 'register');
         }
 
-        // Create customer
-        $customer = Customer::create([
-            'name' => ucwords(strtolower(trim($request->name))),
-            'email' => strtolower(trim($request->email)),
-            'mobile' => trim($request->mobile),
-            'password' => Hash::make($request->password),
-            'status' => 1, // Auto-activate
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
-
-        // Auto Login
-        Auth::guard('customer')->login($customer);
-
-        // Sync cart immediately
-        $this->cartHelper->syncCart();
-
         // Generate OTP
         $otp = rand(100000, 999999);
+        $mobile = trim($request->mobile);
+        $expiresAt = now()->addMinutes(5);
 
-        // Send OTP via SMS only
+        // Store registration data in Cache (Temporarily for 5 minutes)
+        // Key: pending_register_{mobile}
+        $registrationData = [
+            'name' => ucwords(strtolower(trim($request->name))),
+            'email' => strtolower(trim($request->email)),
+            'mobile' => $mobile,
+            'password' => Hash::make($request->password), // Hash it now for safety
+            'otp' => $otp,
+            'expires_at' => $expiresAt->timestamp,
+            'attempts' => 0,
+            'created_at' => now(),
+        ];
+
+        $cacheKey = 'pending_register_' . $mobile;
+        Cache::put($cacheKey, $registrationData, 300); // 5 minutes
+
+        // Also store OTP separately for quick validation if needed
+        Cache::put('otp_' . $mobile, $otp, 300);
+        // Store expiry for legacy/independent access if needed
+        Cache::put('otp_expires_' . $mobile, $expiresAt->timestamp, 300);
+
+        // Send OTP via SMS
         try {
-            $this->smsService->sendOtp($customer->mobile, $otp);
-            // Email OTP disabled
-            // Mail::to($customer->email)->send(new OTPVerify($otp));
+            $this->smsService->sendOtp($mobile, $otp);
         } catch (\Exception $e) {
             \Log::error('OTP SMS sending failed: ' . $e->getMessage());
         }
 
-        // Store verification data in cache with unique key (using mobile)
-        $verificationKey = 'verify_' . $customer->mobile;
-        $verificationData = [
-            'customer_id' => $customer->id,
-            'email' => $customer->email,
-            'mobile' => $customer->mobile,
-            'otp' => $otp,
-            'attempts' => 0,
-            'created_at' => now()->timestamp
-        ];
-
-        Cache::put($verificationKey, $verificationData, 300); // 5 minutes
-        Cache::put('otp_' . $customer->mobile, $otp, 300);
-
-        // Store verification key in session
-        session(['verification_key' => $verificationKey]);
+        // Set session for the verify page identifying this as a pending registration
+        session([
+            'pending_mobile' => $mobile,
+            'verification_context' => 'register'
+        ]);
 
         return redirect()->route('customer.verify')
             ->with([
-                'customer_id' => $customer->id,
-                'mobile' => $customer->mobile,
-                'verification_key' => $verificationKey,
-                'success' => 'Registration successful! Please check your mobile for OTP.'
+                'mobile' => $mobile,
+                'success' => 'Please verify your mobile number to complete registration.'
             ]);
     }
 
     public function verifyPage()
     {
+        $otpExpiresAt = null;
+        $mobile = null;
+
         // 1. If Logged In, allow access
         if (Auth::guard('customer')->check()) {
             $customer = Auth::guard('customer')->user();
-
-            // If already verified, go home
             if ($customer->email_verified_at) {
                 return redirect()->route('customer.home.index');
             }
-
-            // If session keys missing, restore them for the view
+            $mobile = $customer->mobile;
             if (!session()->has('mobile')) {
-                session(['mobile' => $customer->mobile]);
+                session(['mobile' => $mobile]);
             }
-
-            // If verification key missing, maybe we just render view 
-            // and let them click "Resend" if OTP is lost?
-            // Or better, trigger a resend if completely empty?
-            // For now, let's just show the view.
-
-            return view('customer.auth.verify');
         }
-
-        // 2. If Guest, check session
-        if (!session()->has('verification_key') && !session()->has('customer_id')) {
+        // 2. If Pending Registration (New Flow)
+        elseif (session()->has('pending_mobile') && session('verification_context') == 'register') {
+            $mobile = session('pending_mobile');
+            // Try pending cache first
+            $cacheKey = 'pending_register_' . $mobile;
+            $data = Cache::get($cacheKey);
+            if ($data && isset($data['expires_at'])) {
+                $otpExpiresAt = $data['expires_at'];
+            }
+        }
+        // 3. Fallback for legacy/guest
+        elseif (!session()->has('verification_key') && !session()->has('customer_id')) {
             return redirect()->route('customer.register')
                 ->with('error', 'Please register first to get verification OTPs.');
+        } else {
+            $mobile = session('mobile');
         }
 
-        return view('customer.auth.verify');
+        // If not found in pending data, try general key
+        if (!$otpExpiresAt && $mobile) {
+            $otpExpiresAt = Cache::get('otp_expires_' . $mobile);
+        }
+
+        // Default to now + 5 mins if totally missing (fallback)
+        if (!$otpExpiresAt) {
+            $otpExpiresAt = now()->addMinutes(5)->timestamp;
+        }
+
+        return view('customer.auth.verify', compact('otpExpiresAt'));
     }
 
     public function verify(Request $request)
@@ -245,161 +315,203 @@ class AuthController extends Controller
                 ->with('form', 'verify');
         }
 
-        // Get verification data
+        // Determine context
+        $mobile = session('pending_mobile') ?? session('mobile');
+        $isPendingRegistration = session('verification_context') == 'register';
+
+        // === CASE 1: PENDING REGISTRATION (User not created yet) ===
+        if ($isPendingRegistration && $mobile) {
+            $cacheKey = 'pending_register_' . $mobile;
+            $registrationData = Cache::get($cacheKey);
+
+            if (!$registrationData) {
+                return redirect()->route('customer.register')
+                    ->with('error', 'Verification session expired. Please register again.');
+            }
+
+            // Verify OTP
+            if ($registrationData['otp'] != $request->otp) {
+                // Increment attempts could go here
+                return redirect()->route('customer.verify')
+                    ->withErrors(['otp' => 'Invalid OTP. Please try again.'])
+                    ->withInput()
+                    ->with('form', 'verify');
+            }
+
+            // SUCCESS: Create User Now
+            $customer = Customer::create([
+                'name' => $registrationData['name'],
+                'email' => $registrationData['email'],
+                'mobile' => $registrationData['mobile'],
+                'password' => $registrationData['password'], // Already hashed
+                'status' => 1,
+                'email_verified_at' => now(), // Assume verified since they passed OTP
+                'mobile_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            // Clear Cache & Session
+            Cache::forget($cacheKey);
+            Cache::forget('otp_' . $mobile);
+            session()->forget(['pending_mobile', 'verification_context']);
+
+            // Login
+            Auth::guard('customer')->login($customer);
+
+            // Send Welcome
+            try {
+                $this->smsService->sendWelcome($customer->mobile);
+            } catch (\Exception $e) {
+            }
+
+            // Sync Cart
+            $this->cartHelper->syncCart();
+
+            return redirect()->route('customer.home.index')
+                ->with('success', 'Registration and Verification successful!');
+        }
+
+        // === CASE 2: EXISTING USER VERIFICATION (Already Logged In or Legacy Session) ===
+
+        // Get verification data from legacy session keys
         $verificationKey = session('verification_key');
         $customerId = session('customer_id');
-        $email = session('email');
-        $mobile = session('mobile');
 
-        // Try to get from cache if session data is missing
-        if ($verificationKey) {
-            $verificationData = Cache::get($verificationKey);
-            if ($verificationData) {
-                $customerId = $verificationData['customer_id'];
-                $email = $verificationData['email'];
-                $mobile = $verificationData['mobile'];
-
-                // Check attempts
-                if ($verificationData['attempts'] >= 5) {
-                    Cache::forget($verificationKey);
-                    Cache::forget($verificationKey);
-                    Cache::forget('email_otp_' . $email);
-
-                    return redirect()->route('customer.register')
-                        ->with('error', 'Too many failed attempts. Please register again.');
-                }
-            }
-        }
-
-        if (!$customerId && Auth::guard('customer')->check()) {
+        if (Auth::guard('customer')->check()) {
             $customer = Auth::guard('customer')->user();
             $customerId = $customer->id;
-            $email = $customer->email;
+            $mobile = $customer->mobile;
         }
 
-        if (!$customerId || !$email) {
+        if (!$customerId) {
             return redirect()->route('customer.register')
-                ->with('error', 'Verification session expired. Please register again.');
+                ->with('error', 'Session invalid. Please login or register.');
         }
 
         // Get cached OTPs
         $cachedOTP = Cache::get('otp_' . $mobile);
 
-        // Verify OTPs
-        if (
-            !$cachedOTP ||
-            $cachedOTP != $request->otp
-        ) {
-
-            // Increment attempts
-            if ($verificationKey && $verificationData) {
-                $verificationData['attempts']++;
-                Cache::put($verificationKey, $verificationData, 300);
-            }
-
-            return redirect()->back()
+        // Verify
+        if (!$cachedOTP || $cachedOTP != $request->otp) {
+            return redirect()->route('customer.verify')
                 ->withErrors(['otp' => 'Invalid OTP. Please try again.'])
                 ->withInput()
                 ->with('form', 'verify');
         }
 
-        // OTPs verified - update customer
+        // Success for existing user
         $customer = Customer::find($customerId);
         if ($customer) {
             $customer->update([
                 'email_verified_at' => now(),
                 'mobile_verified_at' => now(),
-                'status' => 1,
-                'updated_at' => now()
+                'status' => 1
             ]);
 
-            // Clear all cached data
-            if ($verificationKey) {
+            // Clear legacy session/cache
+            if ($verificationKey)
                 Cache::forget($verificationKey);
-            }
             Cache::forget('otp_' . $mobile);
+            session()->forget(['verification_key', 'customer_id', 'email', 'mobile']);
 
-            // Clear session
-            session()->forget([
-                'verification_key',
-                'customer_id',
-                'email',
-                'mobile',
-                'email_otp'
-            ]);
-
-            // Auto login
-            Auth::guard('customer')->login($customer);
-
-            // Send Welcome SMS
-            $this->smsService->sendWelcome($customer->mobile);
-
-            // Sync cart immediately after verification login
-            $this->cartHelper->syncCart();
+            // If not logged in, login
+            if (!Auth::guard('customer')->check()) {
+                Auth::guard('customer')->login($customer);
+            }
 
             return redirect()->route('customer.home.index')
-                ->with('success', 'Verification successful! Welcome to ' . config('app.name'));
+                ->with('success', 'Verification successful!');
         }
 
-        return redirect()->route('customer.register')->with('error', 'Customer not found.');
+        return redirect()->route('customer.login')->with('error', 'User not found.');
     }
 
     public function resendOTP(Request $request)
     {
-        $verificationKey = session('verification_key');
-        $customerId = session('customer_id');
-        $email = session('email');
-        $mobile = session('mobile');
+        // 1. Pending Registration Flow
+        if (session('verification_context') == 'register' && session('pending_mobile')) {
+            $mobile = session('pending_mobile');
+            $cacheKey = 'pending_register_' . $mobile;
+            $registrationData = Cache::get($cacheKey);
 
-        if (!$verificationKey || !$customerId || !$email || !$mobile) {
+            if (!$registrationData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Registration session expired. Please register again.'
+                ], 400);
+            }
+
+            // Generate new OTP
+            $newOTP = rand(100000, 999999);
+            $expiresAt = now()->addMinutes(5);
+
+            // Update cache
+            $registrationData['otp'] = $newOTP;
+            $registrationData['expires_at'] = $expiresAt->timestamp;
+
+            Cache::put($cacheKey, $registrationData, 300);
+            Cache::put('otp_' . $mobile, $newOTP, 300);
+            Cache::put('otp_expires_' . $mobile, $expiresAt->timestamp, 300);
+
+            try {
+                $this->smsService->sendOtp($mobile, $newOTP);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send SMS.'
+                ], 500);
+            }
+
             return response()->json([
-                'success' => false,
-                'message' => 'Session expired. Please register again.'
-            ], 400);
+                'success' => true,
+                'message' => 'OTP resent successfully.',
+                'expires_at' => $expiresAt->timestamp
+            ]);
         }
 
-        // Get customer
-        $customer = Customer::find($customerId);
-        if (!$customer) {
+        // 2. Existing Legacy Flow
+        $verificationKey = session('verification_key');
+        $customerId = session('customer_id');
+        $mobile = session('mobile');
+
+        if (Auth::guard('customer')->check()) {
+            $mobile = Auth::guard('customer')->user()->mobile;
+        }
+
+        if (!$mobile) {
             return response()->json([
                 'success' => false,
-                'message' => 'Customer not found.'
+                'message' => 'Session expired.'
             ], 400);
         }
 
         // Generate new OTPs
         $newOTP = rand(100000, 999999);
+        $expiresAt = now()->addMinutes(5);
 
         // Update cache
         Cache::put('otp_' . $mobile, $newOTP, 300);
+        Cache::put('otp_expires_' . $mobile, $expiresAt->timestamp, 300);
 
-        // Update verification data
-        $verificationData = Cache::get($verificationKey);
-        if ($verificationData) {
-            $verificationData['otp'] = $newOTP;
-            $verificationData['attempts'] = 0;
-            Cache::put($verificationKey, $verificationData, 300);
-        }
-
-        // Send OTP via SMS only
+        // Use SMS Service
         try {
             $this->smsService->sendOtp($mobile, $newOTP);
         } catch (\Exception $e) {
-            \Log::error('OTP Resend SMS failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send SMS. Please try again.'
+                'message' => 'Failed to send SMS.'
             ], 500);
         }
 
-        // Update session
-        session(['otp' => $newOTP]);
-
         return response()->json([
             'success' => true,
-            'message' => 'OTP resent successfully to ' . $mobile,
+            'message' => 'OTP resent successfully',
+            'expires_at' => $expiresAt->timestamp
         ]);
     }
+
+
 
     public function changeMobile(Request $request)
     {

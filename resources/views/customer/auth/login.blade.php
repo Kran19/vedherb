@@ -69,6 +69,29 @@
                 <!-- Login Form -->
                 <form id="login-form" class="space-y-6" method="POST" action="{{ route('customer.login.submit') }}">
                     @csrf
+
+                    @if(session('status'))
+                        <div class="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium text-center">
+                            {{ session('status') }}
+                        </div>
+                    @endif
+
+                    @if(session('success'))
+                        <div class="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium text-center">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="p-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium text-center">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if($errors->has('email') || $errors->has('mobile'))
+                        {{-- specific errors are handled by fields usually, but if global like 'invalid credentials' --}}
+                    @endif
+
                     <!-- Mobile Number -->
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-2">
@@ -180,10 +203,6 @@
 @endsection
 
 @push('scripts')
-    <!-- Add SweetAlert for notifications -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const loginForm = document.getElementById('login-form');
@@ -250,9 +269,9 @@
                 if (loginBtn) {
                     loginBtn.disabled = true;
                     loginBtn.innerHTML = `
-                            <iconify-icon icon="lucide:loader-2" width="18" class="animate-spin"></iconify-icon>
-                            Signing In...
-                        `;
+                                    <iconify-icon icon="lucide:loader-2" width="18" class="animate-spin"></iconify-icon>
+                                    Signing In...
+                                `;
                 }
             });
 
@@ -279,66 +298,6 @@
                     }
                 });
             });
-
-            // Show flash messages if any
-            @if(session('status'))
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    didOpen: (toast) => {
-                        toast.addEventListener('mouseenter', Swal.stopTimer)
-                        toast.addEventListener('mouseleave', Swal.resumeTimer)
-                    }
-                });
-
-                Toast.fire({
-                    icon: 'success',
-                    title: '{{ session('status') }}'
-                });
-            @endif
-
-                @if(session('success'))
-                    const SuccessToast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.addEventListener('mouseenter', Swal.stopTimer)
-                            toast.addEventListener('mouseleave', Swal.resumeTimer)
-                        }
-                    });
-
-                    SuccessToast.fire({
-                        icon: 'success',
-                        title: '{{ session('success') }}'
-                    });
-                @endif
-
-            @if($errors->any())
-                @foreach($errors->all() as $error)
-                    const ErrorToast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.addEventListener('mouseenter', Swal.stopTimer)
-                            toast.addEventListener('mouseleave', Swal.resumeTimer)
-                        }
-                    });
-
-                    ErrorToast.fire({
-                        icon: 'error',
-                        title: '{{ $error }}'
-                    });
-                @endforeach
-            @endif
-            });
+        });
     </script>
 @endpush

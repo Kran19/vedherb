@@ -28,5 +28,16 @@ class AppServiceProvider extends ServiceProvider
                 ->orderBy('sort_order')
                 ->get());
         });
+
+        // Share settings with Admin Views
+        \Illuminate\Support\Facades\View::composer(['admin.*', 'admin.auth.login'], function ($view) {
+            $storeName = \App\Helpers\SettingsHelper::get('store_name', 'eCommerce');
+            $themeColor = \App\Helpers\SettingsHelper::get('theme_color', '#4f46e5');
+
+            $view->with('adminSettings', [
+                'store_name' => $storeName,
+                'theme_color' => $themeColor,
+            ]);
+        });
     }
 }

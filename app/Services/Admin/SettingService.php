@@ -50,7 +50,7 @@ class SettingService
     /**
      * Get setting value with proper type casting
      */
-    private function getSettingValue(Setting $setting): mixed
+    private function getSettingValue($setting): mixed
     {
         if (!$setting) {
             return null;
@@ -178,9 +178,9 @@ class SettingService
                 [
                     'key' => 'store_name',
                     'label' => 'Store Name',
-                    'value' => 'MyApiqo Jewels',
+                    'value' => 'Ved Herbs & Ayurveda',
                     'type' => 'text',
-                    'default' => 'MyApiqo Jewels',
+                    'default' => 'Ved Herbs & Ayurveda',
                     'description' => 'The name of your online store',
                     'is_encrypted' => false,
                     'is_public' => true,
@@ -189,9 +189,9 @@ class SettingService
                 [
                     'key' => 'store_email',
                     'label' => 'Store Email',
-                    'value' => 'contact@MyApiqojewels.com',
+                    'value' => 'contact@vedherbs.com',
                     'type' => 'text',
-                    'default' => 'contact@MyApiqojewels.com',
+                    'default' => 'contact@vedherbs.com',
                     'description' => 'Primary contact email for the store',
                     'is_encrypted' => false,
                     'is_public' => true,
@@ -229,9 +229,9 @@ class SettingService
                 [
                     'key' => 'store_address',
                     'label' => 'Store Address',
-                    'value' => 'Suite 405, Jaipur Jewelry Mart, MI Road, Jaipur, Rajasthan 302001, India',
+                    'value' => 'Ayurvedic Wellness Center, India',
                     'type' => 'textarea',
-                    'default' => 'Suite 405, Jaipur Jewelry Mart, MI Road, Jaipur, Rajasthan 302001, India',
+                    'default' => 'Ayurvedic Wellness Center, India',
                     'description' => 'Physical address of the store',
                     'is_encrypted' => false,
                     'is_public' => true,
@@ -242,9 +242,9 @@ class SettingService
                 [
                     'key' => 'meta_title',
                     'label' => 'Meta Title',
-                    'value' => 'MyApiqo Jewels - Exquisite Indian Imitation & Fashion Jewelry',
+                    'value' => 'Ved Herbs - Authentic Ayurvedic Wellness',
                     'type' => 'text',
-                    'default' => 'MyApiqo Jewels - Exquisite Indian Imitation & Fashion Jewelry',
+                    'default' => 'Ved Herbs - Authentic Ayurvedic Wellness',
                     'description' => 'Default meta title for pages',
                     'is_encrypted' => false,
                     'is_public' => true,
@@ -253,9 +253,9 @@ class SettingService
                 [
                     'key' => 'meta_description',
                     'label' => 'Meta Description',
-                    'value' => 'Discover stunning Indian imitation jewelry at MyApiqo Jewels. From traditional Kundan sets to modern fashion jewelry, find the perfect piece for every occasion with fast delivery across India.',
+                    'value' => 'Discover authentic Ayurvedic wellness products by Ved Herbs. Natural remedies, immunity boosters, and holistic health solutions.',
                     'type' => 'textarea',
-                    'default' => 'Discover stunning Indian imitation jewelry at MyApiqo Jewels. From traditional Kundan sets to modern fashion jewelry, find the perfect piece for every occasion with fast delivery across India.',
+                    'default' => 'Discover authentic Ayurvedic wellness products by Ved Herbs. Natural remedies, immunity boosters, and holistic health solutions.',
                     'description' => 'Default meta description for pages',
                     'is_encrypted' => false,
                     'is_public' => true,
@@ -264,9 +264,9 @@ class SettingService
                 [
                     'key' => 'meta_keywords',
                     'label' => 'Meta Keywords',
-                    'value' => 'imitation jewelry, indian jewelry, kundan, polki, fashion accessories, wedding jewelry, online jewelry india',
+                    'value' => 'ayurveda, herbal products, natural wellness, immunity, ved herbs, holistic health',
                     'type' => 'text',
-                    'default' => 'imitation jewelry, indian jewelry, kundan, polki, fashion accessories, wedding jewelry, online jewelry india',
+                    'default' => 'ayurveda, herbal products, natural wellness, immunity, ved herbs, holistic health',
                     'description' => 'Default meta keywords for SEO',
                     'is_encrypted' => false,
                     'is_public' => true,
@@ -409,15 +409,26 @@ class SettingService
                     'is_encrypted' => false,
                     'is_public' => true,
                     'sort_order' => 40
+                ],
+                [
+                    'key' => 'social_youtube',
+                    'label' => 'YouTube URL',
+                    'value' => '',
+                    'type' => 'text',
+                    'default' => '',
+                    'description' => 'YouTube channel URL',
+                    'is_encrypted' => false,
+                    'is_public' => true,
+                    'sort_order' => 50
                 ]
             ],
             'appearance' => [
                 [
                     'key' => 'theme_color',
                     'label' => 'Theme Color',
-                    'value' => '#4f46e5',
+                    'value' => '#065f46',
                     'type' => 'color',
-                    'default' => '#4f46e5',
+                    'default' => '#065f46',
                     'description' => 'Primary theme color',
                     'is_encrypted' => false,
                     'is_public' => true,

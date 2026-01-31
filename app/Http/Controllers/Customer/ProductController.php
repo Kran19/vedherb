@@ -198,6 +198,7 @@ class ProductController extends Controller
                 ->latest()
                 ->get();
 
+
             $wishlistVariantIds = [];
             if (\Illuminate\Support\Facades\Auth::guard('customer')->check()) {
                 $wishlist = \App\Models\Wishlist::where('customer_id', \Illuminate\Support\Facades\Auth::guard('customer')->id())->first();

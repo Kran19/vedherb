@@ -4,11 +4,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'eCommerce Admin Panel')</title>
+    <title>@yield('title', ($adminSettings['store_name'] ?? 'Ved Herbs') . ' Admin')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Dynamic Theme Styles -->
+    <style>
+        :root {
+            --theme-color:
+                {{ $adminSettings['theme_color'] ?? '#065f46' }}
+            ;
+        }
+
+        .theme-text {
+            color: var(--theme-color) !important;
+        }
+
+        .theme-bg {
+            background-color: var(--theme-color) !important;
+        }
+
+        .theme-border {
+            border-color: var(--theme-color) !important;
+        }
+
+        .btn-primary {
+            background-color: var(--theme-color) !important;
+            border-color: var(--theme-color) !important;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        /* Sidebar active link overrides */
+        .sidebar-active-link {
+            background: linear-gradient(to right,
+                    {{ $adminSettings['theme_color'] }}
+                    1a,
+                    {{ $adminSettings['theme_color'] }}
+                    0a) !important;
+            border-right-color:
+                {{ $adminSettings['theme_color'] }}
+                !important;
+            color:
+                {{ $adminSettings['theme_color'] }}
+                !important;
+        }
+
+        .sidebar-active-icon {
+            color:
+                {{ $adminSettings['theme_color'] }}
+                !important;
+        }
+
+        @media (max-width: 768px) {
+
+            #sidebar .text-expandable,
+            #sidebar .fa-chevron-down,
+            #sidebar .parent-link i {
+                color: var(--theme-color) !important;
+            }
+        }
+    </style>
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -43,7 +103,8 @@
         @include('admin.partials.sidebar')
     @endif
 
-    <div id="main-content" class="transition-all duration-300 @if (request()->is('admin/*') && !request()->is('admin/login')) ml-0 md:ml-24 @endif">
+    <div id="main-content"
+        class="transition-all duration-300 @if (request()->is('admin/*') && !request()->is('admin/login')) ml-0 md:ml-24 @endif">
         @if (request()->is('admin/*') && !request()->is('admin/login'))
             @include('admin.partials.header')
         @endif
@@ -74,18 +135,18 @@
 
 
     @if(session('success'))
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            toastr.success("{{ session('success') }}");
-        });
-    </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                toastr.success("{{ session('success') }}");
+            });
+        </script>
     @endif
     @if(session('error'))
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            toastr.error("{{ session('error') }}");
-        });
-    </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                toastr.error("{{ session('error') }}");
+            });
+        </script>
     @endif
 
     @stack('scripts')

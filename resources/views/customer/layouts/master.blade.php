@@ -12,6 +12,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Dynamic Favicon -->
+    @php
+        $favicon = \App\Helpers\SettingsHelper::get('favicon_url', asset('assets/images/favicon.ico'));
+    @endphp
+    <link rel="icon" href="{{ $favicon }}">
+
+
     <!-- Vite Assets -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 

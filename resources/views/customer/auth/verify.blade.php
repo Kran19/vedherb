@@ -71,6 +71,27 @@
                 <form id="verifyForm" class="space-y-6 relative" method="POST"
                     action="{{ route('customer.verify.submit') }}">
                     @csrf
+
+                    <div id="inline-messages">
+                        @if(session('success'))
+                            <div class="p-3 mb-4 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium text-center">
+                                {{ session('success') }}
+                            </div>
+                        @endif
+
+                        @if(session('error'))
+                            <div class="p-3 mb-4 rounded-lg bg-red-50 text-red-600 text-sm font-medium text-center">
+                                {{ session('error') }}
+                            </div>
+                        @endif
+
+                        @if($errors->any())
+                            <div class="p-3 mb-4 rounded-lg bg-red-50 text-red-600 text-sm font-medium text-center">
+                                {{ $errors->first() }}
+                            </div>
+                        @endif
+                    </div>
+
                     <input type="hidden" name="verification_key" value="{{ session('verification_key') }}">
 
                     <!-- OTP -->
@@ -82,7 +103,7 @@
                             <iconify-icon icon="lucide:key" width="18"
                                 class="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400">
                             </iconify-icon>
-                            <input type="text" <input type="text" name="otp" maxlength="6" required value="{{ old('otp') }}"
+                            <input type="text" name="otp" maxlength="6" required value="{{ old('otp') }}"
                                 class="w-full bg-stone-50 border border-stone-300 rounded-xl pl-12 pr-4 py-3 text-center text-xl font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 @error('otp') border-red-500 @enderror"
                                 placeholder="123456" autocomplete="off" id="emailOtpInput">
                         </div>
@@ -93,11 +114,19 @@
                                     Sent to: <span class="font-medium text-stone-700">{{ session('mobile') }}</span>
                                 @endif
                             </span>
-                            <button type="button" onclick="openChangeMobileModal()"
-                                class="text-emerald-700 hover:text-emerald-800 font-medium flex items-center gap-1 transition-colors">
-                                <iconify-icon icon="lucide:pencil" width="12"></iconify-icon>
-                                Change Mobile
-                            </button>
+                            @if(session('verification_context') == 'register')
+                                <a href="{{ route('customer.verify.edit-registration') }}"
+                                    class="text-emerald-700 hover:text-emerald-800 font-medium flex items-center gap-1 transition-colors">
+                                    <iconify-icon icon="lucide:pencil" width="12"></iconify-icon>
+                                    Change Mobile
+                                </a>
+                            @else
+                                <button type="button" onclick="openChangeMobileModal()"
+                                    class="text-emerald-700 hover:text-emerald-800 font-medium flex items-center gap-1 transition-colors">
+                                    <iconify-icon icon="lucide:pencil" width="12"></iconify-icon>
+                                    Change Mobile
+                                </button>
+                            @endif
                         </div>
 
                         @error('otp')
@@ -190,15 +219,16 @@
 @endsection
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Input Formatting
             const otpInput = document.getElementById('emailOtpInput');
-            otpInput.addEventListener('input', function (e) {
-                this.value = this.value.replace(/\D/g, '');
-                this.classList.remove('border-red-500');
-            });
+            if(otpInput) {
+                otpInput.addEventListener('input', function (e) {
+                    this.value = this.value.replace(/\D/g, '');
+                    this.classList.remove('border-red-500');
+                });
+            }
 
             // Modal Logic
             const modal = document.getElementById('changeMobileModal');
@@ -208,13 +238,10 @@
 
             window.openChangeMobileModal = function () {
                 modal.classList.remove('hidden');
-                // Trigger reflow
-                void modal.offsetWidth;
-
+                void modal.offsetWidth; // Trigger reflow
                 backdrop.classList.remove('opacity-0');
                 panel.classList.remove('opacity-0', 'translate-y-4', 'sm:translate-y-0', 'sm:scale-95');
                 panel.classList.add('opacity-100', 'translate-y-0', 'sm:scale-100');
-
                 newMobileInput.value = '{{ session('mobile') }}';
                 setTimeout(() => newMobileInput.focus(), 100);
             }
@@ -223,218 +250,194 @@
                 backdrop.classList.add('opacity-0');
                 panel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100');
                 panel.classList.add('opacity-0', 'translate-y-4', 'sm:translate-y-0', 'sm:scale-95');
-
                 setTimeout(() => {
                     modal.classList.add('hidden');
                 }, 300);
             }
 
+            // Helper to show inline message
+            function showInlineMessage(type, message) {
+                const container = document.getElementById('inline-messages');
+                if (!container) return;
+                
+                const div = document.createElement('div');
+                div.className = `p-3 mb-4 rounded-lg text-sm font-medium text-center ${type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`;
+                div.innerText = message;
+                
+                container.innerHTML = '';
+                container.appendChild(div);
+                setTimeout(() => div.remove(), 5000);
+            }
+
             // Change Mobile Submit
-            document.getElementById('changeMobileForm').addEventListener('submit', function (e) {
-                e.preventDefault();
-                const mobile = newMobileInput.value;
-                const btn = this.querySelector('button[type="submit"]');
-                const originalContent = btn.innerHTML;
+            const changeMobileForm = document.getElementById('changeMobileForm');
+            if(changeMobileForm) {
+                changeMobileForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const mobile = newMobileInput.value;
+                    const btn = this.querySelector('button[type="submit"]');
+                    const originalContent = btn.innerHTML;
 
-                btn.disabled = true;
-                btn.innerHTML = '<iconify-icon icon="lucide:loader-2" width="16" class="animate-spin"></iconify-icon> Updating...';
+                    btn.disabled = true;
+                    btn.innerHTML = '<iconify-icon icon="lucide:loader-2" width="16" class="animate-spin"></iconify-icon> Updating...';
 
-                fetch('{{ route("customer.auth.change-mobile") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ mobile: mobile })
-                })
+                    fetch("{{ route('customer.auth.change-mobile') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ mobile: mobile })
+                    })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Mobile Updated',
-                                text: 'Mobile updated and OTP resent!',
-                                confirmButtonColor: '#065f46',
-                                timer: 2000
-                            });
-
+                            showInlineMessage('success', 'Mobile updated and OTP resent!');
                             closeChangeMobileModal();
 
-                            // Update displayed mobile
                             const mobileSpan = document.querySelector('.text-stone-500 span.font-medium');
                             if (mobileSpan) mobileSpan.textContent = mobile;
 
-                            // Reset resend timer
-                            resendTimeLeft = 60;
-                            updateResendTimer();
-                            if (!resendTimerInterval) resendTimerInterval = setInterval(updateResendTimer, 1000);
+                            if (data.expires_at) {
+                                expiryTimestamp = data.expires_at;
+                            } else {
+                                expiryTimestamp = Math.floor(Date.now() / 1000) + 300;
+                            }
+                            clearInterval(timerInterval);
+                            otpTimer.classList.remove('text-red-600');
+                            otpTimer.classList.add('text-emerald-700');
+                            updateOTPTimer();
+                            timerInterval = setInterval(updateOTPTimer, 1000);
+                            
                         } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Failed',
-                                text: data.message || 'Failed to update mobile',
-                                confirmButtonColor: '#065f46'
-                            });
+                            alert(data.message || 'Failed to update mobile');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'An error occurred. Please try again.',
-                            confirmButtonColor: '#065f46'
-                        });
+                        alert('An error occurred. Please try again.');
                     })
                     .finally(() => {
                         btn.disabled = false;
                         btn.innerHTML = originalContent;
                     });
-            });
+                });
+            }
 
-            // OTP Timer
-            let otpTimeLeft = 300; // 5 minutes
+            // OTP Timer Logic
             const otpTimer = document.getElementById('otpTimer');
+            const resendBtn = document.getElementById('resendOtpBtn');
+            const resendText = document.getElementById('resendText');
+            
+            // Backend expiry timestamp
+            let expiryTimestamp = {{ $otpExpiresAt ?? 0 }};
+            if(expiryTimestamp === 0) {
+                 expiryTimestamp = Math.floor(Date.now() / 1000) + 300;
+            }
+
             let timerInterval;
 
             function updateOTPTimer() {
-                const minutes = Math.floor(otpTimeLeft / 60);
-                const seconds = otpTimeLeft % 60;
+                const now = Math.floor(Date.now() / 1000);
+                let secondsLeft = expiryTimestamp - now;
 
-                otpTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                if (otpTimeLeft <= 0) {
+                if (secondsLeft <= 0) {
+                    secondsLeft = 0;
                     clearInterval(timerInterval);
-                    otpTimer.textContent = "Expired";
-                    otpTimer.classList.remove('text-emerald-700');
-                    otpTimer.classList.add('text-red-600');
-                    document.getElementById('resendOtpBtn').disabled = false;
-                    document.getElementById('resendText').textContent = 'Resend OTP';
+                    if(otpTimer) {
+                        otpTimer.textContent = "Expired";
+                        otpTimer.classList.remove('text-emerald-700');
+                        otpTimer.classList.add('text-red-600');
+                    }
+                    if(resendBtn) {
+                        resendBtn.disabled = false;
+                        if(resendText) resendText.textContent = 'Resend OTP';
+                    }
                 } else {
-                    otpTimeLeft--;
+                    const minutes = Math.floor(secondsLeft / 60);
+                    const seconds = secondsLeft % 60;
+                    if(otpTimer) otpTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    
+                    const generatedAt = expiryTimestamp - 300;
+                    const resendAvailableAt = generatedAt + 60;
+                    let resendSecondsLeft = resendAvailableAt - now;
+                    
+                    if (resendSecondsLeft > 0) {
+                        if(resendBtn) resendBtn.disabled = true;
+                        if(resendText) resendText.textContent = `Resend OTP (${resendSecondsLeft}s)`;
+                    } else {
+                        if(secondsLeft > 0) { 
+                            if(resendBtn) resendBtn.disabled = false;
+                            if(resendText) resendText.textContent = 'Resend OTP';
+                        }
+                    }
                 }
             }
 
+            // Start Timer
+            updateOTPTimer(); 
             timerInterval = setInterval(updateOTPTimer, 1000);
 
-            // Resend OTP Functionality
-            let resendTimeLeft = 60;
-            const resendBtn = document.getElementById('resendOtpBtn');
-            const resendText = document.getElementById('resendText');
-            let resendTimerInterval;
+            // Resend Click
+            if(resendBtn) {
+                resendBtn.addEventListener('click', function () {
+                    if (this.disabled) return;
 
-            function updateResendTimer() {
-                if (resendTimeLeft > 0) {
-                    resendBtn.disabled = true;
-                    resendText.textContent = `Resend OTP (${resendTimeLeft}s)`;
-                    resendTimeLeft--;
-                } else {
-                    resendBtn.disabled = false;
-                    resendText.textContent = 'Resend OTP';
-                    clearInterval(resendTimerInterval);
-                    resendTimerInterval = null;
-                }
-            }
+                    this.disabled = true;
+                    if(resendText) resendText.innerHTML = '<iconify-icon icon="lucide:loader-2" width="14" class="animate-spin"></iconify-icon>';
 
-            resendTimerInterval = setInterval(updateResendTimer, 1000);
-
-            resendBtn.addEventListener('click', function () {
-                if (this.disabled) return;
-
-                this.disabled = true;
-                resendTimeLeft = 60;
-                updateResendTimer();
-                resendTimerInterval = setInterval(updateResendTimer, 1000);
-
-                // AJAX request to resend OTP
-                fetch('{{ route("customer.otp.resend") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                })
+                    fetch("{{ route('customer.otp.resend') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Update demo OTP if visible
-                            const demoDiv = document.querySelector('.bg-emerald-50 .text-lg');
-                            if (demoDiv && data.email_otp) {
-                                demoDiv.textContent = data.email_otp;
+                            if (data.expires_at) {
+                                expiryTimestamp = data.expires_at;
+                            } else {
+                                expiryTimestamp = Math.floor(Date.now() / 1000) + 300;
                             }
-
-                            // Reset main timer
-                            otpTimeLeft = 300;
+                            
                             clearInterval(timerInterval);
-                            otpTimer.textContent = "05:00";
-                            otpTimer.classList.remove('text-red-600');
-                            otpTimer.classList.add('text-emerald-700');
+                            if(otpTimer) {
+                                otpTimer.classList.remove('text-red-600');
+                                otpTimer.classList.add('text-emerald-700');
+                            }
+                            updateOTPTimer();
                             timerInterval = setInterval(updateOTPTimer, 1000);
 
-                            const Toast = Swal.mixin({
-                                toast: true,
-                                position: 'top-end',
-                                showConfirmButton: false,
-                                timer: 3000,
-                                timerProgressBar: true
-                            });
-                            Toast.fire({
-                                icon: 'success',
-                                title: 'OTP Resent Successfully'
-                            });
+                            showInlineMessage('success', 'OTP Resent Successfully');
                         } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: data.message || 'Failed to resend OTP',
-                                confirmButtonColor: '#065f46'
-                            });
-                            this.disabled = false;
-                            resendText.textContent = 'Resend OTP';
+                            showInlineMessage('error', data.message || 'Failed to resend OTP');
+                            updateOTPTimer(); 
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'An error occurred',
-                            confirmButtonColor: '#065f46'
-                        });
-                        this.disabled = false;
-                        resendText.textContent = 'Resend OTP';
+                        showInlineMessage('error', 'An error occurred');
+                        updateOTPTimer();
                     });
-            });
-
-            // Form Submission Loading State
-            document.getElementById('verifyForm').addEventListener('submit', function () {
-                if (this.checkValidity()) {
-                    const btn = document.getElementById('submit-btn');
-                    btn.disabled = true;
-                    btn.innerHTML = '<iconify-icon icon="lucide:loader-2" width="18" class="animate-spin"></iconify-icon> Verifying...';
-                }
-            });
-
-            // Global Flash Messages
-            @if(session('success'))
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: '{{ session('success') }}',
-                    confirmButtonColor: '#065f46',
                 });
-            @endif
+            }
 
-            @if(session('error'))
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: '{{ session('error') }}',
-                    confirmButtonColor: '#065f46',
+            const verifyForm = document.getElementById('verifyForm');
+            if(verifyForm) {
+                verifyForm.addEventListener('submit', function () {
+                    if (this.checkValidity()) {
+                        const btn = document.getElementById('submit-btn');
+                        if(btn) {
+                            btn.disabled = true;
+                            btn.innerHTML = '<iconify-icon icon="lucide:loader-2" width="18" class="animate-spin"></iconify-icon> Verifying...';
+                        }
+                    }
                 });
-            @endif
-                });
+            }
+        });
     </script>
 @endpush

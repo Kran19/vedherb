@@ -76,6 +76,24 @@
                 <form id="signup-form" method="POST" action="{{ route('customer.register.submit') }}" class="space-y-4 sm:space-y-6">
                     @csrf
                     
+                    @if(session('success'))
+                        <div class="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium text-center">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+                    
+                    @if(session('error'))
+                        <div class="p-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium text-center">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+                    
+                    @if($errors->any())
+                        <div class="p-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium text-center">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
+                    
                     <!-- Name Field -->
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1 sm:mb-2">
@@ -199,8 +217,9 @@
 </div>
 @endsection
 
+
+
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const signupForm = document.getElementById('signup-form');
@@ -240,6 +259,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 passwordMatchText.classList.remove('hidden');
                 confirmPasswordInput.classList.remove('border-red-500');
                 confirmPasswordInput.classList.add('border-emerald-500');
+                
+                // Remove mismatch error if exists
+                const mismatchErr = document.getElementById('password-mismatch-error');
+                if(mismatchErr) mismatchErr.classList.add('hidden');
             } else {
                 passwordMatchText.classList.add('hidden');
                 confirmPasswordInput.classList.add('border-red-500');
@@ -258,12 +281,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // Basic validation
         if (passwordInput.value !== confirmPasswordInput.value) {
             e.preventDefault();
-            Swal.fire({
-                icon: 'error',
-                title: 'Passwords Mismatch',
-                text: 'Passwords do not match',
-                confirmButtonColor: '#065f46',
-            });
+            
+            // Show inline error instead of SweetAlert
+            let mismatchErr = document.getElementById('password-mismatch-error');
+            if(!mismatchErr) {
+                 mismatchErr = document.createElement('div');
+                 mismatchErr.id = 'password-mismatch-error';
+                 mismatchErr.className = 'w-full p-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium text-center mb-4';
+                 mismatchErr.innerText = 'Passwords do not match';
+                 signupForm.insertBefore(mismatchErr, signupForm.firstChild);
+            } else {
+                mismatchErr.classList.remove('hidden');
+                mismatchErr.innerText = 'Passwords do not match';
+            }
+            
+            // Scroll to top
+            window.scrollTo({ top: signupForm.offsetTop - 20, behavior: 'smooth' });
+            
             return;
         }
         
@@ -274,25 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
             Creating Account...
         `;
     });
-    
-    // Show flash messages
-    @if(session('success'))
-        Swal.fire({
-            icon: 'success',
-            title: 'Success!',
-            text: '{{ session('success') }}',
-            confirmButtonColor: '#065f46',
-        });
-    @endif
-    
-    @if($errors->any())
-        Swal.fire({
-            icon: 'error',
-            title: 'Registration Failed',
-            text: '{{ $errors->first() }}',
-            confirmButtonColor: '#065f46',
-        });
-    @endif
 });
 </script>
 @endpush
