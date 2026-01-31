@@ -575,6 +575,9 @@ class ProductService
     private function syncVariantAttributes(ProductVariant $variant, array $variantData): void
     {
         if (isset($variantData['attributes']) && is_array($variantData['attributes'])) {
+            // Delete existing attributes first to allow updates
+            DB::table('variant_attributes')->where('variant_id', $variant->id)->delete();
+
             $attributesData = [];
             foreach ($variantData['attributes'] as $attributeData) {
                 if (!empty($attributeData['attribute_id'])) {
@@ -992,7 +995,7 @@ class ProductService
 
             if ($variant) {
                 // UPDATE existing
-                $variant->update([
+                $updateData = [
                     'sku' => $variantData['sku'],
                     'price' => $variantData['price'],
                     'compare_price' => $variantData['compare_price'] ?? null,
@@ -1000,13 +1003,31 @@ class ProductService
                     'stock_status' => ($variantData['stock_quantity'] > 0) ? 'in_stock' : 'out_of_stock',
                     'is_default' => (isset($data['default_variant_index']) && $data['default_variant_index'] == $index) || ($variantData['is_default'] ?? 0),
                     'status' => 1
-                ]);
+                ];
+
+                if (isset($variantData['attributes']) && is_array($variantData['attributes'])) {
+                    $updateData['combination_hash'] = $this->generateCombinationHash($variantData['attributes']);
+                }
+
+                $variant->update($updateData);
+
+                // Sync Attributes for Existing Variant
+                if (isset($variantData['attributes'])) {
+                    $this->syncVariantAttributes($variant, $variantData);
+                }
+
                 Log::debug('Variant updated', ['variant_id' => $variant->id, 'sku' => $variant->sku]);
             } else {
                 // CREATE new
+                $combinationHash = null;
+                if (isset($variantData['attributes']) && is_array($variantData['attributes'])) {
+                    $combinationHash = $this->generateCombinationHash($variantData['attributes']);
+                }
+
                 $variant = ProductVariant::create([
                     'product_id' => $product->id,
                     'sku' => $variantData['sku'],
+                    'combination_hash' => $combinationHash,
                     'price' => $variantData['price'],
                     'compare_price' => $variantData['compare_price'] ?? null,
                     'stock_quantity' => $variantData['stock_quantity'],

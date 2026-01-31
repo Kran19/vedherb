@@ -26,12 +26,12 @@ class ProductController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('product_code', 'like', "%{$search}%")
-                  ->orWhereHas('defaultVariant', function($v) use ($search) {
-                      $v->where('sku', 'like', "%{$search}%");
-                  });
+                    ->orWhere('product_code', 'like', "%{$search}%")
+                    ->orWhereHas('defaultVariant', function ($v) use ($search) {
+                        $v->where('sku', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -86,46 +86,51 @@ class ProductController extends Controller
     {
         // Eager load everything needed for the view, mirroring Service logic but as Eloquent model
         $product = Product::with([
-            'tags', 
-            'categories', 
+            'tags',
+            'categories',
             'defaultVariant.images', // For simple product data
             'brand',
             'mainCategory',
             'variants.images',
             'variants.primaryImage.media',
-            'specifications' => function($q) {
-                $q->with('values'); 
+            'specifications' => function ($q) {
+                $q->with('values');
             }
         ])->findOrFail($id);
-        
+
         $categories = Category::with('children')->whereNull('parent_id')->get();
         $brands = Brand::where('status', 1)->get();
         $taxClasses = TaxClass::all();
         $tags = Tag::all();
-        
-        return view('admin.products.edit', compact('product', 'categories', 'brands', 'taxClasses', 'tags'));
+
+        $categoryAttributes = [];
+        if ($product->main_category_id) {
+            $categoryAttributes = $this->productService->getCategoryAttributes($product->main_category_id);
+        }
+
+        return view('admin.products.edit', compact('product', 'categories', 'brands', 'taxClasses', 'tags', 'categoryAttributes'));
     }
 
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
-        
+
         // Prevent changing immutable fields logic if needed here, 
         // but User requested "cannot be updated", usually handled by 'disabled' inputs in view.
         // If inputs are disabled, they won't be in $request->all(), so Service might need to be careful?
         // Service `updateProduct` does: 'product_type' => $data['product_type'],
         // If it's missing from request, it will error or set null.
         // We might need to merge existing values for disabled fields if Service relies on them.
-        
+
         $data = $request->all();
         if (!isset($data['product_type'])) {
             $data['product_type'] = $product->product_type;
         }
         if (!isset($data['main_category_id'])) {
-             // If disabled, we should probably keep existing.
-             // But category MIGHT be editable? User said "on edit category , product type cannot be update".
-             // So we keep existing.
-             $data['main_category_id'] = $product->main_category_id;
+            // If disabled, we should probably keep existing.
+            // But category MIGHT be editable? User said "on edit category , product type cannot be update".
+            // So we keep existing.
+            $data['main_category_id'] = $product->main_category_id;
         }
 
         $result = $this->productService->updateProduct($product, $data);
@@ -140,7 +145,7 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         if ($product->orderItems()->exists()) {
-             return back()->with('error', 'Cannot delete product. It has associated orders.');
+            return back()->with('error', 'Cannot delete product. It has associated orders.');
         }
 
         $product->delete();
@@ -148,7 +153,7 @@ class ProductController extends Controller
     }
 
     // AJAX Endpoints used by Blade Views (axios)
-    
+
     public function getCategorySpecifications($categoryId)
     {
         try {
@@ -158,7 +163,7 @@ class ProductController extends Controller
                 'data' => $specs
             ]);
         } catch (\Exception $e) {
-             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -171,7 +176,7 @@ class ProductController extends Controller
                 'data' => $attrs
             ]);
         } catch (\Exception $e) {
-             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -197,7 +202,7 @@ class ProductController extends Controller
         if ($request->filled('q')) {
             $search = $request->q;
             $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('product_code', 'like', "%{$search}%");
+                ->orWhere('product_code', 'like', "%{$search}%");
         }
 
         $products = $query->latest()->limit(20)->get();

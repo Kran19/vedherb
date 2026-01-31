@@ -223,27 +223,52 @@
                                     <!-- PHP RENDERED VARIANTS -->
                                     @foreach($product->variants as $idx => $variant)
                                         <tr id="variant-row-{{ $idx }}">
-                                            <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700">
-                                                {{-- Variant Name Construction --}}
-                                                @php
-                                                    $name = $variant->attributes->map(function ($a) {
-                                                        return $a->value ?? 'NA';
-                                                    })->join(' / ');
-                                                @endphp
-                                                <div class="font-medium">{{ $name ?: 'Variant #' . ($idx + 1) }}</div>
-
+                                            <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700 align-top">
                                                 <input type="hidden" name="variants[{{ $idx }}][id]" value="{{ $variant->id }}">
 
-                                                {{-- Need to preserve attributes for existing variants if we want them to remain
-                                                valid on save --}}
-                                                @foreach($variant->attributes as $attr)
-                                                    <input type="hidden"
-                                                        name="variants[{{ $idx }}][attributes][{{ $loop->index }}][attribute_id]"
-                                                        value="{{ $attr->pivot->attribute_id }}">
-                                                    <input type="hidden"
-                                                        name="variants[{{ $idx }}][attributes][{{ $loop->index }}][attribute_value_id]"
-                                                        value="{{ $attr->pivot->attribute_value_id }}">
-                                                @endforeach
+                                                @if(isset($categoryAttributes) && count($categoryAttributes) > 0)
+                                                    <div class="space-y-2">
+                                                        @foreach($categoryAttributes as $attrIndex => $catAttr)
+                                                            @php
+                                                                $existingAttr = $variant->attributes->firstWhere('id', $catAttr['id']);
+                                                                $selectedValue = $existingAttr ? $existingAttr->pivot->attribute_value_id : '';
+                                                            @endphp
+                                                            <div class="flex flex-col">
+                                                                <label class="text-xs text-gray-500">{{ $catAttr['name'] }}</label>
+                                                                <input type="hidden" 
+                                                                    name="variants[{{ $idx }}][attributes][{{ $attrIndex }}][attribute_id]" 
+                                                                    value="{{ $catAttr['id'] }}">
+                                                                
+                                                                <select name="variants[{{ $idx }}][attributes][{{ $attrIndex }}][attribute_value_id]" 
+                                                                        class="text-sm border rounded px-1 py-1 w-full" required>
+                                                                    <option value="">Select</option>
+                                                                    @foreach($catAttr['options'] as $option)
+                                                                        <option value="{{ $option['id'] }}" 
+                                                                            {{ $selectedValue == $option['id'] ? 'selected' : '' }}>
+                                                                            {{ $option['label'] ?? $option['value'] }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    {{-- Fallback for legacy or if attributes missing --}}
+                                                    @php
+                                                        $name = $variant->attributes->map(function ($a) {
+                                                            return $a->value ?? 'NA';
+                                                        })->join(' / ');
+                                                    @endphp
+                                                    <div class="font-medium">{{ $name ?: 'Variant #' . ($idx + 1) }}</div>
+                                                    @foreach($variant->attributes as $attr)
+                                                        <input type="hidden"
+                                                            name="variants[{{ $idx }}][attributes][{{ $loop->index }}][attribute_id]"
+                                                            value="{{ $attr->pivot->attribute_id }}">
+                                                        <input type="hidden"
+                                                            name="variants[{{ $idx }}][attributes][{{ $loop->index }}][attribute_value_id]"
+                                                            value="{{ $attr->pivot->attribute_value_id }}">
+                                                    @endforeach
+                                                @endif
                                             </td>
                                             <td class="px-3 py-2">
                                                 <input type="text" name="variants[{{ $idx }}][sku]" value="{{ $variant->sku }}"
@@ -616,7 +641,7 @@
         });
 
         // Valid attributes for the current category
-        let categoryAttributes = [];
+        let categoryAttributes = @json($categoryAttributes ?? []);
 
         async function fetchSpecifications(categoryId) {
             if (!categoryId) return;
