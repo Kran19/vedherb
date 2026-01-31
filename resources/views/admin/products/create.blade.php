@@ -202,6 +202,7 @@
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variant</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-32">SKU</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Price</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Compare Price</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Stock</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-48">Images</th>
                                     <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase w-16">Default</th>
@@ -239,6 +240,9 @@
                                         <td class="px-3 py-2">
                                             <input type="number" name="variants[{{ $idx }}][price]" value="{{ $variant['price'] ?? '' }}" step="0.01" class="w-full px-2 py-1 border rounded text-sm {{ $errors->has('variants.'.$idx.'.price') ? 'border-red-500' : '' }}">
                                             @error('variants.'.$idx.'.price') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <input type="number" name="variants[{{ $idx }}][compare_price]" value="{{ $variant['compare_price'] ?? '' }}" step="0.01" class="w-full px-2 py-1 border rounded text-sm">
                                         </td>
                                         <td class="px-3 py-2">
                                             <input type="number" name="variants[{{ $idx }}][stock_quantity]" value="{{ $variant['stock_quantity'] ?? '' }}" class="w-full px-2 py-1 border rounded text-sm {{ $errors->has('variants.'.$idx.'.stock_quantity') ? 'border-red-500' : '' }}">
@@ -753,6 +757,7 @@
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variant</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-32">SKU</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Price</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Compare Price</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Stock</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-48">Images</th>
                     <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase w-16">Default</th>
@@ -783,6 +788,9 @@
                 </td>
                 <td class="px-3 py-2">
                     <input type="number" name="variants[${idx}][price]" value="${basePrice}" step="0.01" class="w-full px-2 py-1 border rounded text-sm">
+                </td>
+                <td class="px-3 py-2">
+                    <input type="number" name="variants[${idx}][compare_price]" value="" step="0.01" class="w-full px-2 py-1 border rounded text-sm">
                 </td>
                 <td class="px-3 py-2">
                     <input type="number" name="variants[${idx}][stock_quantity]" value="0" class="w-full px-2 py-1 border rounded text-sm">

@@ -115,8 +115,8 @@
 
                         <!-- Gallery Images (For Simple Product / Product Level) -->
                         <!-- Only relevant if product is Simple, or if we treat Configurable parent images as generic gallery. 
-                             Usually Configurable products have a main image representation, but variants have specific images.
-                             We'll keep this for simple products mostly. -->
+                                     Usually Configurable products have a main image representation, but variants have specific images.
+                                     We'll keep this for simple products mostly. -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Gallery Images</label>
                             <div id="gallery-container" class="grid grid-cols-3 md:grid-cols-5 gap-4 mb-3">
@@ -206,6 +206,9 @@
                                         </th>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Price
                                         </th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Compare
+                                            Price
+                                        </th>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Stock
                                         </th>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-48">Images
@@ -249,6 +252,11 @@
                                             <td class="px-3 py-2">
                                                 <input type="number" name="variants[{{ $idx }}][price]"
                                                     value="{{ $variant->price }}" step="0.01"
+                                                    class="w-full px-2 py-1 border rounded text-sm">
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                <input type="number" name="variants[{{ $idx }}][compare_price]"
+                                                    value="{{ $variant->compare_price }}" step="0.01"
                                                     class="w-full px-2 py-1 border rounded text-sm">
                                             </td>
                                             <td class="px-3 py-2">
@@ -576,10 +584,10 @@
                 // Reset to "No Img" placeholder
                 const container = btn.closest('.variant-main-thumb').parentElement;
                 container.innerHTML = `
-                    <div class="relative w-12 h-12 variant-main-thumb border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-xs text-gray-400">
-                        <span class="text-[0.6rem]">No Img</span>
-                    </div>
-                `;
+                        <div class="relative w-12 h-12 variant-main-thumb border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-xs text-gray-400">
+                            <span class="text-[0.6rem]">No Img</span>
+                        </div>
+                    `;
             } else {
                 // Remove hidden input
                 const inputContainer = document.getElementById(`variant-gallery-inputs-${idx}`);
@@ -600,7 +608,7 @@
             ];
         }));
 
-        document.getElementById('name').addEventListener('input', function() {
+        document.getElementById('name').addEventListener('input', function () {
             let slug = this.value.toLowerCase()
                 .replace(/[^\w ]+/g, '')
                 .replace(/ +/g, '-');
@@ -619,7 +627,7 @@
             try {
                 const response = await axios.get(`{{ route('admin.products.category.specifications', ':id') }}`.replace(':id', categoryId));
 
-                if(response.data.success) {
+                if (response.data.success) {
                     renderSpecifications(response.data.data);
                 } else {
                     container.innerHTML = '<p class="text-red-500">Failed to load specifications.</p>';
@@ -633,87 +641,87 @@
         async function fetchAttributes(categoryId) {
             if (!categoryId) return;
             try {
-                 // We can reuse the same endpoint structure usually, or add a specific one.
-                 // The controller has getCategoryAttributes
-                 const response = await axios.get(`{{ route('admin.products.category.attributes', ':id') }}`.replace(':id', categoryId));
-                 if (response.data.success) {
-                     categoryAttributes = response.data.data;
-                     console.log('Attributes loaded:', categoryAttributes);
-                 }
+                // We can reuse the same endpoint structure usually, or add a specific one.
+                // The controller has getCategoryAttributes
+                const response = await axios.get(`{{ route('admin.products.category.attributes', ':id') }}`.replace(':id', categoryId));
+                if (response.data.success) {
+                    categoryAttributes = response.data.data;
+                    console.log('Attributes loaded:', categoryAttributes);
+                }
             } catch (error) {
                 console.error('Attribute fetch error:', error);
             }
         }
 
         function renderSpecifications(groups) {
-             const container = document.getElementById('specifications-container');
-             container.innerHTML = '';
+            const container = document.getElementById('specifications-container');
+            container.innerHTML = '';
 
-             if (!groups || groups.length === 0) {
-                 container.innerHTML = '<p class="text-gray-500">No specifications found for this category.</p>';
-                 return;
-             }
+            if (!groups || groups.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">No specifications found for this category.</p>';
+                return;
+            }
 
-             let html = '';
-             let specIndex = 0;
+            let html = '';
+            let specIndex = 0;
 
-             groups.forEach(group => {
-                 html += `<div class="mb-6">`;
-                 html += `<h4 class="font-medium text-gray-700 mb-3 bg-gray-50 p-2 rounded">${group.group_name}</h4>`;
-                 html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+            groups.forEach(group => {
+                html += `<div class="mb-6">`;
+                html += `<h4 class="font-medium text-gray-700 mb-3 bg-gray-50 p-2 rounded">${group.group_name}</h4>`;
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
 
-                 group.specifications.forEach(spec => {
-                     const fieldName = `specifications[${specIndex}]`;
+                group.specifications.forEach(spec => {
+                    const fieldName = `specifications[${specIndex}]`;
 
-                     const match = existingSpecs.find(s => s.specification_id === spec.id);
-                     const existingValId = match ? match.specification_value_id : null;
-                     const existingCustom = match ? match.custom_value : '';
+                    const match = existingSpecs.find(s => s.specification_id === spec.id);
+                    const existingValId = match ? match.specification_value_id : null;
+                    const existingCustom = match ? match.custom_value : '';
 
-                     html += `<div>`;
-                     html += `<input type="hidden" name="${fieldName}[specification_id]" value="${spec.id}">`;
-                     html += `<label class="block text-sm text-gray-600 mb-1">${spec.name} ${spec.is_required ? '<span class="text-red-500">*</span>' : ''}</label>`;
+                    html += `<div>`;
+                    html += `<input type="hidden" name="${fieldName}[specification_id]" value="${spec.id}">`;
+                    html += `<label class="block text-sm text-gray-600 mb-1">${spec.name} ${spec.is_required ? '<span class="text-red-500">*</span>' : ''}</label>`;
 
-                     if (['select', 'multiselect', 'radio'].includes(spec.input_type)) {
-                         html += `<select name="${fieldName}[specification_value_id]" class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500">`;
-                         html += `<option value="">Select ${spec.name}</option>`;
-                         html += `<option value="">None</option>`;
-                         if(spec.values) {
-                             spec.values.forEach(val => {
-                                 const selected = (existingValId == val.id) ? 'selected' : '';
-                                 html += `<option value="${val.id}" ${selected}>${val.value}</option>`;
-                             });
-                         }
-                         html += `</select>`;
-                     } else if (spec.input_type === 'textarea') {
-                         const val = existingCustom || '';
-                         html += `<textarea name="${fieldName}[custom_value]" rows="3" class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500">${val}</textarea>`;
-                     } else if (spec.input_type === 'checkbox') {
-                         const checked = existingCustom == '1' ? 'checked' : '';
-                         html += `
-                            <div class="flex items-center mt-2">
-                                <input type="hidden" name="${fieldName}[custom_value]" value="0">
-                                <input type="checkbox" name="${fieldName}[custom_value]" value="1" ${checked} class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                <span class="ml-2 text-sm text-gray-600">Yes</span>
-                            </div>
-                         `;
-                     } else {
-                         const val = existingCustom || '';
-                         html += `<input type="text" name="${fieldName}[custom_value]" value="${val}" class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500">`;
-                     }
+                    if (['select', 'multiselect', 'radio'].includes(spec.input_type)) {
+                        html += `<select name="${fieldName}[specification_value_id]" class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500">`;
+                        html += `<option value="">Select ${spec.name}</option>`;
+                        html += `<option value="">None</option>`;
+                        if (spec.values) {
+                            spec.values.forEach(val => {
+                                const selected = (existingValId == val.id) ? 'selected' : '';
+                                html += `<option value="${val.id}" ${selected}>${val.value}</option>`;
+                            });
+                        }
+                        html += `</select>`;
+                    } else if (spec.input_type === 'textarea') {
+                        const val = existingCustom || '';
+                        html += `<textarea name="${fieldName}[custom_value]" rows="3" class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500">${val}</textarea>`;
+                    } else if (spec.input_type === 'checkbox') {
+                        const checked = existingCustom == '1' ? 'checked' : '';
+                        html += `
+                                <div class="flex items-center mt-2">
+                                    <input type="hidden" name="${fieldName}[custom_value]" value="0">
+                                    <input type="checkbox" name="${fieldName}[custom_value]" value="1" ${checked} class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-600">Yes</span>
+                                </div>
+                             `;
+                    } else {
+                        const val = existingCustom || '';
+                        html += `<input type="text" name="${fieldName}[custom_value]" value="${val}" class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500">`;
+                    }
 
-                     html += `</div>`;
-                     specIndex++;
-                 });
+                    html += `</div>`;
+                    specIndex++;
+                });
 
-                 html += `</div></div>`;
-             });
+                html += `</div></div>`;
+            });
 
-             container.innerHTML = html;
+            container.innerHTML = html;
         }
 
         // Initial Load
         const initialCategory = document.getElementById('main_category_id').value;
-        if(initialCategory) {
+        if (initialCategory) {
             fetchSpecifications(initialCategory);
             fetchAttributes(initialCategory);
         }
@@ -772,32 +780,32 @@
             grid.innerHTML = '';
 
             data.data.forEach(media => {
-                 const div = document.createElement('div');
-                 div.className = `relative group cursor-pointer border rounded-lg overflow-hidden ${selectedMediaId === media.id ? 'ring-2 ring-blue-500' : ''}`;
-                 div.onclick = () => selectMedia(media.id, media.url);
-                 div.innerHTML = `
-                    <img src="${media.thumb_url || media.url}" class="w-full h-32 object-cover">
-                    <div class="p-2 text-xs truncate">${media.filename}</div>
-                 `;
-                 grid.appendChild(div);
+                const div = document.createElement('div');
+                div.className = `relative group cursor-pointer border rounded-lg overflow-hidden ${selectedMediaId === media.id ? 'ring-2 ring-blue-500' : ''}`;
+                div.onclick = () => selectMedia(media.id, media.url);
+                div.innerHTML = `
+                        <img src="${media.thumb_url || media.url}" class="w-full h-32 object-cover">
+                        <div class="p-2 text-xs truncate">${media.filename}</div>
+                     `;
+                grid.appendChild(div);
             });
 
-             const pag = document.getElementById('media-pagination');
-             let pagHtml = `<span class="text-sm">Page ${data.current_page} of ${data.last_page}</span>`;
-             pagHtml += `<div class="space-x-1">`;
-             if(data.prev_page_url) pagHtml += `<button type="button" onclick="loadMedia(${data.current_page - 1})" class="px-2 py-1 border rounded hover:bg-gray-50">Prev</button>`;
-             if(data.next_page_url) pagHtml += `<button type="button" onclick="loadMedia(${data.current_page + 1})" class="px-2 py-1 border rounded hover:bg-gray-50">Next</button>`;
-             pagHtml += `</div>`;
-             pag.innerHTML = pagHtml;
+            const pag = document.getElementById('media-pagination');
+            let pagHtml = `<span class="text-sm">Page ${data.current_page} of ${data.last_page}</span>`;
+            pagHtml += `<div class="space-x-1">`;
+            if (data.prev_page_url) pagHtml += `<button type="button" onclick="loadMedia(${data.current_page - 1})" class="px-2 py-1 border rounded hover:bg-gray-50">Prev</button>`;
+            if (data.next_page_url) pagHtml += `<button type="button" onclick="loadMedia(${data.current_page + 1})" class="px-2 py-1 border rounded hover:bg-gray-50">Next</button>`;
+            pagHtml += `</div>`;
+            pag.innerHTML = pagHtml;
         }
 
         function selectMedia(id, url) {
             selectedMediaId = id;
             const items = document.getElementById('media-grid').children;
-            for(let item of items) {
+            for (let item of items) {
                 item.classList.remove('ring-2', 'ring-blue-500');
-                if(item.querySelector('img').src.includes(url)) {
-                     item.classList.add('ring-2', 'ring-blue-500');
+                if (item.querySelector('img').src.includes(url)) {
+                    item.classList.add('ring-2', 'ring-blue-500');
                 }
             }
 
@@ -806,7 +814,7 @@
         }
 
         function confirmSelection(id, url) {
-            if(currentMode === 'main') {
+            if (currentMode === 'main') {
                 document.getElementById('main_image_id').value = id;
                 document.getElementById('main-image-preview').innerHTML = `<img src="${url}" class="h-32 object-cover rounded border">`;
             } else if (currentMode === 'gallery') {
@@ -817,29 +825,29 @@
                 addVariantGalleryImage(currentVariantIndex, id, url);
             }
 
-            if(!currentMode.includes('gallery')) {
-                 closeMediaModal();
+            if (!currentMode.includes('gallery')) {
+                closeMediaModal();
             } else {
-                 toastr.success('Image added to gallery');
+                toastr.success('Image added to gallery');
             }
         }
 
         function addGalleryImage(id, url) {
             const inputs = document.querySelectorAll('input[name="gallery_image_ids[]"]');
-            for(let input of inputs) {
-                if(input.value == id) return;
+            for (let input of inputs) {
+                if (input.value == id) return;
             }
 
             const container = document.getElementById('gallery-container');
             const div = document.createElement('div');
             div.className = "relative group border rounded-lg overflow-hidden h-24";
             div.innerHTML = `
-                <img src="${url}" class="w-full h-full object-cover">
-                <input type="hidden" name="gallery_image_ids[]" value="${id}">
-                <button type="button" onclick="this.parentElement.remove()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            `;
+                    <img src="${url}" class="w-full h-full object-cover">
+                    <input type="hidden" name="gallery_image_ids[]" value="${id}">
+                    <button type="button" onclick="this.parentElement.remove()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                `;
             container.appendChild(div);
         }
 
@@ -849,18 +857,18 @@
 
             // Remove existing main image thumb if any
             const existing = container.querySelector('.variant-main-thumb');
-            if(existing) existing.remove();
+            if (existing) existing.remove();
 
             input.value = id;
 
             const thumb = document.createElement('div');
             thumb.className = 'relative w-12 h-12 variant-main-thumb border-2 border-blue-500 rounded overflow-hidden group';
             thumb.innerHTML = `
-                <img src="${url}" class="w-full h-full object-cover">
-                <button type="button" onclick="removeVariantImage(${idx}, 'main', this)" class="absolute top-0 right-0 bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition rounded-bl">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            `;
+                    <img src="${url}" class="w-full h-full object-cover">
+                    <button type="button" onclick="removeVariantImage(${idx}, 'main', this)" class="absolute top-0 right-0 bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition rounded-bl">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                `;
 
             // Prepend to start of container list
             container.prepend(thumb);
@@ -870,7 +878,7 @@
             const container = document.getElementById(`variant-images-${idx}`);
             const hiddenContainer = document.getElementById(`variant-gallery-inputs-${idx}`);
 
-            if(hiddenContainer.querySelector(`input[value="${id}"]`)) return;
+            if (hiddenContainer.querySelector(`input[value="${id}"]`)) return;
 
             const input = document.createElement('input');
             input.type = 'hidden';
@@ -881,17 +889,17 @@
             const thumb = document.createElement('div');
             thumb.className = 'relative w-12 h-12 border border-gray-200 rounded overflow-hidden group';
             thumb.innerHTML = `
-                <img src="${url}" class="w-full h-full object-cover">
-                <button type="button" onclick="removeVariantImage(${idx}, 'gallery', this, ${id})" class="absolute top-0 right-0 bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition rounded-bl">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            `;
+                    <img src="${url}" class="w-full h-full object-cover">
+                    <button type="button" onclick="removeVariantImage(${idx}, 'gallery', this, ${id})" class="absolute top-0 right-0 bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition rounded-bl">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                `;
             container.appendChild(thumb);
         }
 
         // Add Manual Variant Logic
-        document.getElementById('add-variant-btn')?.addEventListener('click', function() {
-            if(categoryAttributes.length === 0) {
+        document.getElementById('add-variant-btn')?.addEventListener('click', function () {
+            if (categoryAttributes.length === 0) {
                 toastr.error('Please wait for attributes to load or ensure category has attributes.');
                 return;
             }
@@ -905,52 +913,52 @@
             let attributesHtml = '<div class="space-y-2">';
             categoryAttributes.forEach((attr, i) => {
                 attributesHtml += `
-                    <div class="flex flex-col">
-                        <label class="text-xs text-gray-500">${attr.name}</label>
-                        <input type="hidden" name="variants[${newIdx}][attributes][${i}][attribute_id]" value="${attr.id}">
-                        <select name="variants[${newIdx}][attributes][${i}][attribute_value_id]" class="text-sm border rounded px-1 py-1 w-full" required>
-                            <option value="">Select</option>
-                            ${attr.options.map(opt => `<option value="${opt.id}">${opt.label || opt.value}</option>`).join('')}
-                        </select>
-                    </div>
-                `;
+                        <div class="flex flex-col">
+                            <label class="text-xs text-gray-500">${attr.name}</label>
+                            <input type="hidden" name="variants[${newIdx}][attributes][${i}][attribute_id]" value="${attr.id}">
+                            <select name="variants[${newIdx}][attributes][${i}][attribute_value_id]" class="text-sm border rounded px-1 py-1 w-full" required>
+                                <option value="">Select</option>
+                                ${attr.options.map(opt => `<option value="${opt.id}">${opt.label || opt.value}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
             });
             attributesHtml += '</div>';
 
             tr.innerHTML = `
-                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700 align-top">
-                    ${attributesHtml}
-                </td>
-                <td class="px-3 py-2 align-top">
-                    <input type="text" name="variants[${newIdx}][sku]" placeholder="SKU" class="w-full px-2 py-1 border rounded text-sm mb-1">
-                     <button type="button" class="text-xs text-blue-500 underline" onclick="generateSkuForVariant('${newIdx}')">Gen</button>
-                </td>
-                <td class="px-3 py-2 align-top">
-                    <input type="number" name="variants[${newIdx}][price]" value="{{ $product->price }}" step="0.01" class="w-full px-2 py-1 border rounded text-sm">
-                </td>
-                <td class="px-3 py-2 align-top">
-                    <input type="number" name="variants[${newIdx}][stock_quantity]" value="0" class="w-full px-2 py-1 border rounded text-sm">
-                </td>
-                <td class="px-3 py-2 align-top">
-                    <div id="variant-images-${newIdx}" class="flex gap-2 flex-wrap items-center">
-                        <div class="relative w-12 h-12 variant-main-thumb border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-xs text-gray-400">
-                            <span class="text-[0.6rem]">No Img</span>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-700 align-top">
+                        ${attributesHtml}
+                    </td>
+                    <td class="px-3 py-2 align-top">
+                        <input type="text" name="variants[${newIdx}][sku]" placeholder="SKU" class="w-full px-2 py-1 border rounded text-sm mb-1">
+                         <button type="button" class="text-xs text-blue-500 underline" onclick="generateSkuForVariant('${newIdx}')">Gen</button>
+                    </td>
+                    <td class="px-3 py-2 align-top">
+                        <input type="number" name="variants[${newIdx}][price]" value="{{ $product->price }}" step="0.01" class="w-full px-2 py-1 border rounded text-sm">
+                    </td>
+                    <td class="px-3 py-2 align-top">
+                        <input type="number" name="variants[${newIdx}][stock_quantity]" value="0" class="w-full px-2 py-1 border rounded text-sm">
+                    </td>
+                    <td class="px-3 py-2 align-top">
+                        <div id="variant-images-${newIdx}" class="flex gap-2 flex-wrap items-center">
+                            <div class="relative w-12 h-12 variant-main-thumb border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-xs text-gray-400">
+                                <span class="text-[0.6rem]">No Img</span>
+                            </div>
                         </div>
-                    </div>
-                    <button type="button" onclick="openVariantMediaModal('${newIdx}')" class="text-xs text-blue-600 hover:text-blue-800 mt-2 block w-full text-center">Manage Images</button>
-                    <input type="hidden" name="variants[${newIdx}][main_image_id]" id="variant-main-input-${newIdx}" value="">
-                    <div id="variant-gallery-inputs-${newIdx}"></div>
-                </td>
-                <td class="px-3 py-2 text-center align-top">
-                   <input type="radio" name="default_variant_index" value="${newIdx}" onclick="document.querySelectorAll('.is-default-input').forEach(el => el.value=0); document.getElementById('is-default-${newIdx}').value=1;">
-                   <input type="hidden" id="is-default-${newIdx}" name="variants[${newIdx}][is_default]" value="0" class="is-default-input">
-                </td>
-                <td class="px-3 py-2 text-center align-top">
-                    <button type="button" onclick="document.getElementById('variant-row-${newIdx}').remove()" class="text-red-500 hover:text-red-700 transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                </td>
-            `;
+                        <button type="button" onclick="openVariantMediaModal('${newIdx}')" class="text-xs text-blue-600 hover:text-blue-800 mt-2 block w-full text-center">Manage Images</button>
+                        <input type="hidden" name="variants[${newIdx}][main_image_id]" id="variant-main-input-${newIdx}" value="">
+                        <div id="variant-gallery-inputs-${newIdx}"></div>
+                    </td>
+                    <td class="px-3 py-2 text-center align-top">
+                       <input type="radio" name="default_variant_index" value="${newIdx}" onclick="document.querySelectorAll('.is-default-input').forEach(el => el.value=0); document.getElementById('is-default-${newIdx}').value=1;">
+                       <input type="hidden" id="is-default-${newIdx}" name="variants[${newIdx}][is_default]" value="0" class="is-default-input">
+                    </td>
+                    <td class="px-3 py-2 text-center align-top">
+                        <button type="button" onclick="document.getElementById('variant-row-${newIdx}').remove()" class="text-red-500 hover:text-red-700 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </td>
+                `;
 
             tableBody.appendChild(tr);
         });
@@ -974,7 +982,7 @@
                 await axios.post('{{ route("admin.media.upload") }}', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                loadMedia(1); 
+                loadMedia(1);
             } catch (error) {
                 alert('Upload failed');
             }
